@@ -1,0 +1,54 @@
+# Node modules (for frontend and other Node.js-based services)
+node_modules/
+yarn.lock
+npm-debug.log*
+package-lock.json
+
+# Python bytecode and caches
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.egg-info/
+
+# Virtual environments
+venv/
+.env
+*.env
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Next.js build files and generated content (for frontend)
+.next/
+out/
+dist/
+build/
+
+# Tailwind and PostCSS cache
+.tailwind/
+postcss.config.mjs
+
+# Nginx cache or logs (if generated)
+nginx/*
+
+# SQLAlchemy migrations and Alembic cache
+**/migrations/versions/
+*.pyc
+migrations/__pycache__/
+migrations/env.py
+
+# Static files
+# public/
+
+# Mac OS files
+.DS_Store
+
+# IDE and editor files
+.idea/
+.vscode/
