@@ -13,7 +13,7 @@
 
 
 # -------------------------------------------------------------#
-# TODO: CRUD Operations for Inventory:
+# TODO: CRUD Operations for Inventory: - BETTY
 # - Create Inventory Item: Allow the creation of new inventory
 # items with fields like item name, description, quantity, and
 # price. With auto creation of ID Read Inventory Items: Provide
