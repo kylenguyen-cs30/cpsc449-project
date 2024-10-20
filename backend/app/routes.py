@@ -26,7 +26,7 @@
 
 
 # -------------------------------------------------------------#
-# TODO: USER-Specific Inventory Management:
+# TODO: USER-Specific Inventory Management: - PHONG
 # - Each Logged-in user will have their own inventory items, ensuring
 # that users can only access and modify their own data.
 # - Use sessions to ensure that only authenticated users can access
