@@ -1,3 +1,20 @@
+import jwt
+import os
+
+from flask import Blueprint, request, jsonify
+from functools import wraps
+from .models import User
+from app import db
+
+
+crumbl_blueprint = Blueprint("crumbl", __name__)
+
+
+@crumbl_blueprint.route("/")
+def home():
+    return jsonify("Backend Online!")
+
+
 # -------------------------------------------------------------#
 # TODO: User Authentication With Sessions and Cookies: - KYLE
 # - User Login :  Implement user login functionality where
