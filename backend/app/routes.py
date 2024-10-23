@@ -87,7 +87,7 @@ def register():
 
 
 # -------------------------------------------------------------#
-# TODO: Session and Cookie Security:
+# TODO: Session and Cookie Security: - MATHEW
 # - Secure user sessions with encryption (Flask Security key)
 # - Implement proper session expiration handing to automatically
 # log out.
