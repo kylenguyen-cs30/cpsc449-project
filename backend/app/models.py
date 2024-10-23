@@ -29,3 +29,12 @@ class User(db.Model):
 
     def __repr__(self):
         return f"<User {self.userName} created>"
+
+
+# PERF: we need to brainstorm these parts
+#
+# class Cookie(db.Model):
+#     id = db.Column(db.Integer, primary_key)
+
+
+# TODO: Create a Data Structure(an object or dictionary) to hold all cookie values
