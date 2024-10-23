@@ -7,10 +7,10 @@ from .models import User
 from app import db
 
 
-crumbl_blueprint = Blueprint("crumbl", __name__)
+crumbl_blueprint = Blueprint("crumbl_blueprint", __name__)
 
 
-@crumbl_blueprint.route("/")
+@crumbl_blueprint.route("/", methods=["GET"])
 def home():
     return jsonify("Backend Online!")
 
@@ -27,6 +27,41 @@ def home():
 # - Logout (SHANTANU): Implement logout functionality that clears the session and
 # removes authentication cookies
 # -------------------------------------------------------------#
+
+
+@crumbl_blueprint.route("/register", methods=["POST"])
+def register():
+    if request.method == "OPTIONS":
+        return _build_cors_prelight_response()
+    try:
+        firstName = request.json.get("firstName")
+        lastName = request.json.get("lastName")
+        email = request.json.get("email")
+        homeAddress = request.json.get("homeAddress")
+        password = request.json.get("password")
+
+        # checking if the user is already existing
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({"error": "User with this email already existed"}), 401
+
+        new_user = User(
+            firstName=firstName,
+            lastName=lastName,
+            email=email,
+            password=password,
+            homeAddress=homeAddress,
+        )
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        return (jsonify({"message": "New User Created Successfully !"}), 202)
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        return jsonify({"error": f"Failed to register user: {str(e)}"}), 501
 
 
 # -------------------------------------------------------------#
