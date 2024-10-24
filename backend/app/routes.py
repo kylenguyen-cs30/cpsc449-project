@@ -8,7 +8,8 @@ from .models import User
 from app import db
 
 
-crumbl_blueprint = Blueprint("crumbl", __name__)
+crumbl_blueprint = Blueprint("crumbl_blueprint", __name__)
+
 
 
 crumbls = [
@@ -18,7 +19,8 @@ crumbls = [
     {"name": "Pink Velvet Cake Cookie", "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.","quantity":7,"price":4.99,"ID":63}
 ]
 
-@crumbl_blueprint.route("/")
+
+@crumbl_blueprint.route("/", methods=["GET"])
 def home():
     return jsonify("Backend Online!")
 
@@ -67,17 +69,55 @@ def makeCrumbl():
 
 
 # -------------------------------------------------------------#
-# TODO: User Authentication With Sessions and Cookies: - KYLE
-# - User Login :  Implement user login functionality where
+# TODO: User Authentication With Sessions and Cookies: - SHANTANU , KYLE
+# - User Login (SHANTANU) :  Implement user login functionality where
 # a user can log in by providing credentials (username and
 # password). Use sessions and cookies to track and maintain login states.
-# - User Registration: Allow new users to register by
+# - User Registration (KYLE): Allow new users to register by
 # providing a username, password, and email.
-# - Session Management: Use Flask's session management to store user
+# - Session Management (KYLE): Use Flask's session management to store user
 # session data securely
-# - Logout: Implement logout functionality that clears the session and
+# - Logout (SHANTANU): Implement logout functionality that clears the session and
 # removes authentication cookies
 # -------------------------------------------------------------#
+
+
+
+@crumbl_blueprint.route("/register", methods=["POST"])
+def register():
+    if request.method == "OPTIONS":
+        return _build_cors_prelight_response()
+    try:
+        firstName = request.json.get("firstName")
+        lastName = request.json.get("lastName")
+        email = request.json.get("email")
+        homeAddress = request.json.get("homeAddress")
+        password = request.json.get("password")
+
+        # checking if the user is already existing
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({"error": "User with this email already existed"}), 401
+
+        new_user = User(
+            firstName=firstName,
+            lastName=lastName,
+            email=email,
+            password=password,
+            homeAddress=homeAddress,
+        )
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        return (jsonify({"message": "New User Created Successfully !"}), 202)
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        return jsonify({"error": f"Failed to register user: {str(e)}"}), 501
+
+
 
 # -------------------------------------------------------------#
 # TODO: CRUD Operations for Inventory: - BETTY
@@ -101,7 +141,7 @@ def makeCrumbl():
 
 
 # -------------------------------------------------------------#
-# TODO: Session and Cookie Security:
+# TODO: Session and Cookie Security: - MATHEW
 # - Secure user sessions with encryption (Flask Security key)
 # - Implement proper session expiration handing to automatically
 # log out.
