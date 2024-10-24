@@ -1,5 +1,6 @@
 import jwt
 import os
+import random
 
 from flask import Blueprint, request, jsonify
 from functools import wraps
@@ -10,9 +11,61 @@ from app import db
 crumbl_blueprint = Blueprint("crumbl_blueprint", __name__)
 
 
+
+crumbls = [
+    {"name": "Chocolate Chip", "description": "The classic chocolate chip cookie","quantity": 65,"price": 4.99,"ID": 20},
+    {"name": "Confetti Milk Shake", "description": "A confetti sugar cookie rolled in rainbow sprinkles and topped with cake-flavored buttercream and a dollop of whipped cream","quantity": 23,"price": 4.99,"ID":46},
+    {"name": "Kentucky Butter Cake", "description":"A yellow butter cake cookie smothered with a melt-in-your-mouth buttery glaze.","quantity":12,"price":4.99,"ID":26},
+    {"name": "Pink Velvet Cake Cookie", "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.","quantity":7,"price":4.99,"ID":63}
+]
+
+
 @crumbl_blueprint.route("/", methods=["GET"])
 def home():
     return jsonify("Backend Online!")
+
+def findCrumbl(cid):
+    for cookie in crumbls:
+        if cookie["ID"] == cid:
+            return cookie
+    return None
+
+def newID():
+    while True:
+        nid = random.randint(1,100)
+        if findCrumbl(nid) is None:
+            return nid
+
+
+@crumbl_blueprint.route('/crumbls', methods=['GET'])
+def listCookies():
+    return jsonify(crumbls)
+
+@crumbl_blueprint.route('/crumbls/<int:crumbls_id>', methods=['GET'])
+def crumblsID(crumbls_id):
+    foundC = findCrumbl(crumbls_id)
+    if foundC is None:
+        return jsonify("error: Crumbl Cookie not found"),404
+    return jsonify(foundC)
+
+
+@crumbl_blueprint.route('/crumbls',methods=['POST'])
+def makeCrumbl():
+    if not request.json or 'name' not in request.json or 'description' not in request.json or 'quantity' not in request.json or 'price' not in request.json:
+        return jsonify("error missing information")
+    newCID= newID()
+    newCrumbl = {
+        'name': request.json['name'],
+        'description':request.json['description'],
+        'quantity':request.json['quantity'],
+        'price':request.json['price'],
+        'ID': newCID
+    }
+    crumbls.append(newCrumbl)
+    return jsonify(newCrumbl), 201
+
+    
+
 
 
 # -------------------------------------------------------------#
@@ -27,6 +80,7 @@ def home():
 # - Logout (SHANTANU): Implement logout functionality that clears the session and
 # removes authentication cookies
 # -------------------------------------------------------------#
+
 
 
 @crumbl_blueprint.route("/register", methods=["POST"])
@@ -64,6 +118,7 @@ def register():
         return jsonify({"error": f"Failed to register user: {str(e)}"}), 501
 
 
+
 # -------------------------------------------------------------#
 # TODO: CRUD Operations for Inventory: - BETTY
 # - Create Inventory Item: Allow the creation of new inventory
@@ -75,7 +130,6 @@ def register():
 # item's details (name, quantity, price, etc.).by id
 # - Delete Inventory Item: Enable deletion of an inventory item by ID
 # -------------------------------------------------------------#
-
 
 # -------------------------------------------------------------#
 # TODO: USER-Specific Inventory Management: - PHONG
