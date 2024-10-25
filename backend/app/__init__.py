@@ -1,12 +1,14 @@
 import os
 
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS
-from flask_migrate import Migrate, migrate
 
-db = SQLAlchemy()
-migrate = Migrate()
+# from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
+
+# from flask_migrate import Migrate, migrate
+
+# db = SQLAlchemy()
+# migrate = Migrate()
 
 
 def create_app():
@@ -31,13 +33,16 @@ def create_app():
         ],
     )
 
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
-        "DATABASE_URL", "postgresql://admin:password@db/cpsc449_project"
-    )
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    # NOTE: Enable Database later
+    #
+    # app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+    #     "DATABASE_URL", "postgresql://admin:password@db/cpsc449_project"
+    # )
+    # app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    # db.init_app(app)
+    # migrate.init_app(app, db)
+
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "my-default-secret-key")
-    db.init_app(app)
-    migrate.init_app(app, db)
 
     from app.routes import crumbl_blueprint
 

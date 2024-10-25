@@ -2,9 +2,11 @@ import jwt
 import os
 import random
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from functools import wraps
 from .models import User
+from functools import wraps
+from werkzeug.security import generate_password_hash
 from app import db
 
 
@@ -24,33 +26,68 @@ crumbl_blueprint = Blueprint("crumbl_blueprint", __name__)
 # removes authentication cookies
 # -------------------------------------------------------------#
 
+# User Container
+users = {}
+
+
+# NOTE:  Middleware for login_required
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user_id" not in session:
+            return jsonify({"error": "you must be logged in access this route"}), 403
+        return f(*args, **kwargs)
+
+    return decorated_function
+
 
 @crumbl_blueprint.route("/register", methods=["POST"])
 def register():
-    if request.method == "OPTIONS":
-        return _build_cors_prelight_response()
+
+    # PERF: for frontend, no need yet
+    #
+    # if request.method == "OPTIONS":
+    #     return _build_cors_prelight_response()
+
     try:
-        firstName = request.json.get("firstName")
-        lastName = request.json.get("lastName")
         email = request.json.get("email")
         homeAddress = request.json.get("homeAddress")
         password = request.json.get("password")
 
+        # NOTE: For Part 2
+        #
+        # --------------------------------------------------------------#
         # checking if the user is already existing
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
-            return jsonify({"error": "User with this email already existed"}), 401
+        # existing_user = User.query.filter_by(email=email).first()
+        # if existing_user:
+        #     return jsonify({"error": "User with this email already existed"}), 401
+        # --------------------------------------------------------------#
 
-        new_user = User(
-            firstName=firstName,
-            lastName=lastName,
-            email=email,
-            password=password,
-            homeAddress=homeAddress,
-        )
+        # Check if user already exists
+        if email in users:
+            return jsonify({"error": "User's email is already existed"}), 400
 
-        db.session.add(new_user)
-        db.session.commit()
+        # Secure hash password
+        password_hash = generate_password_hash(password)
+
+        users[email] = {
+            "email": email,
+            "homeAddress": homeAddress,
+            "password": password_hash,
+        }
+
+        # NOTE: For part 2
+        #
+        # --------------------------------------------------------------#
+        # new_user = User(
+        #     email=email,
+        #     password=password,
+        #     homeAddress=homeAddress,
+        # )
+        #
+        # db.session.add(new_user)
+        # db.session.commit()
+        # --------------------------------------------------------------#
 
         return (jsonify({"message": "New User Created Successfully !"}), 202)
     except Exception as e:
@@ -174,4 +211,3 @@ def makeCrumbl():
 # - Implement proper session expiration handing to automatically
 # log out.
 # -------------------------------------------------------------#
-
