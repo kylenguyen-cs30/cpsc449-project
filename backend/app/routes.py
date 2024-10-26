@@ -4,10 +4,10 @@ import random
 
 from flask import Blueprint, request, jsonify, session
 from functools import wraps
-from .models import User
+# from .models import User
 from functools import wraps
 from werkzeug.security import generate_password_hash
-from app import db
+# from app import db
 
 
 crumbl_blueprint = Blueprint("crumbl_blueprint", __name__)
