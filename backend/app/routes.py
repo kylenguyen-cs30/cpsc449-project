@@ -146,36 +146,36 @@ crumbls = [
 def home():
     return jsonify("Backend Online!")
 
-
+# compares and finds cookie
 def findCrumbl(cid):
-    for cookie in crumbls:
-        if cookie["ID"] == cid:
-            return cookie
+    for crum in crumbls:
+        if crum["ID"] == cid:
+            return crum
     return None
 
-
+#assigns a ranom ID number to cookie and ensures it isnt a repeat
 def newID():
     while True:
         nid = random.randint(1, 100)
         if findCrumbl(nid) is None:
             return nid
 
-
+#lists full list of cookies
 @crumbl_blueprint.route("/crumbls", methods=["GET"])
 def listCookies():
     return jsonify(crumbls)
 
-
-@crumbl_blueprint.route("/crumbls/<int:crumbls_id>", methods=["GET"])
-def crumblsID(crumbls_id):
-    foundC = findCrumbl(crumbls_id)
+#find specific cookie by ID number
+@crumbl_blueprint.route("/crumbls/<int:cid>", methods=["GET"])
+def findCrum(cid):
+    foundC = findCrumbl(cid)
     if foundC is None:
         return jsonify("error: Crumbl Cookie not found"), 404
     return jsonify(foundC)
 
-
+#creates new crumbl cookie
 @crumbl_blueprint.route("/crumbls", methods=["POST"])
-def makeCrumbl():
+def makeCrum():
     if (
         not request.json
         or "name" not in request.json
@@ -183,7 +183,7 @@ def makeCrumbl():
         or "quantity" not in request.json
         or "price" not in request.json
     ):
-        return jsonify("error missing information")
+        return jsonify("error missing information"),400
     newCID = newID()
     newCrumbl = {
         "name": request.json["name"],
@@ -194,6 +194,31 @@ def makeCrumbl():
     }
     crumbls.append(newCrumbl)
     return jsonify(newCrumbl), 201
+
+#updates existing cookie
+@crumbl_blueprint.route("/crumbls/<int:cid>", methods=["PUT"])
+def updateCrum(cid):
+    crum = findCrumbl(cid)
+    if crum is None:
+        jsonify('could not find cookie to update'), 404
+    if not request.json:
+        jsonify('please use proper json standards'), 400
+    crum['name']= request.json.get('name',crum['name'])
+    crum['description']= request.json.get('description',crum['description'])
+    crum['quantity']= request.json.get('quantity',crum['quantity'])
+    crum['price']= request.json.get('price',crum['price'])
+    return jsonify(crum)
+
+#deletes crumbl cookie
+@crumbl_blueprint.route("/crumbls/<int:cid>", methods=["DELETE"])
+def deleteCrum(cid):
+    global crumbls
+    crum = findCrum(cid)
+    if crum is None:
+        return jsonify('Crumble cookie could not be found'), 404
+    crumbls = [c for c in crumbls if c['ID']!=cid]
+    return '', 204
+
 
 
 # -------------------------------------------------------------#
