@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify, session
 from functools import wraps
 # from .models import User
 from functools import wraps
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 # from app import db
 
 
@@ -110,36 +110,36 @@ def register():
 # -------------------------------------------------------------#
 
 
-crumbls = [
-    {
-        "name": "Chocolate Chip",
-        "description": "The classic chocolate chip cookie",
-        "quantity": 65,
-        "price": 4.99,
-        "ID": 20,
-    },
-    {
-        "name": "Confetti Milk Shake",
-        "description": "A confetti sugar cookie rolled in rainbow sprinkles and topped with cake-flavored buttercream and a dollop of whipped cream",
-        "quantity": 23,
-        "price": 4.99,
-        "ID": 46,
-    },
-    {
-        "name": "Kentucky Butter Cake",
-        "description": "A yellow butter cake cookie smothered with a melt-in-your-mouth buttery glaze.",
-        "quantity": 12,
-        "price": 4.99,
-        "ID": 26,
-    },
-    {
-        "name": "Pink Velvet Cake Cookie",
-        "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.",
-        "quantity": 7,
-        "price": 4.99,
-        "ID": 63,
-    },
-]
+# crumbls = [
+#     {
+#         "name": "Chocolate Chip",
+#         "description": "The classic chocolate chip cookie",
+#         "quantity": 65,
+#         "price": 4.99,
+#         "ID": 20,
+#     },
+#     {
+#         "name": "Confetti Milk Shake",
+#         "description": "A confetti sugar cookie rolled in rainbow sprinkles and topped with cake-flavored buttercream and a dollop of whipped cream",
+#         "quantity": 23,
+#         "price": 4.99,
+#         "ID": 46,
+#     },
+#     {
+#         "name": "Kentucky Butter Cake",
+#         "description": "A yellow butter cake cookie smothered with a melt-in-your-mouth buttery glaze.",
+#         "quantity": 12,
+#         "price": 4.99,
+#         "ID": 26,
+#     },
+#     {
+#         "name": "Pink Velvet Cake Cookie",
+#         "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.",
+#         "quantity": 7,
+#         "price": 4.99,
+#         "ID": 63,
+#     },
+# ]
 
 
 @crumbl_blueprint.route("/", methods=["GET"])
@@ -228,6 +228,173 @@ def deleteCrum(cid):
 # - Use sessions to ensure that only authenticated users can access
 # inventory-related CRUD Operations
 # -------------------------------------------------------------#
+
+
+# -------------------------------------------------------------#
+# NOTE:
+# Using mock users and mock login to add user_id to session
+# Update new mock crumbls data
+# RuntimeError: The session is unavailable because no secret key was set.
+# TODO:
+# - Add: `app.secret_key="YOUR_SECRET_KEY"` in __init__.py. 
+# -------------------------------------------------------------#
+
+# Mocking users and Login 
+users = [
+    {
+        "id": 1,
+        "email": "john.doe@example.com",
+        "homeAddress": "123 Main St, Springfield, IL",
+        "password": generate_password_hash("jd"),
+    },
+    {
+        "id": 2,
+        "email": "jane.smith@example.com",
+        "homeAddress": "456 Oak St, Springfield, IL",
+        "password": generate_password_hash("js"),
+        "firstName": "Jane",
+        "lastName": "Smith",
+    },
+    {
+        "id": 3,
+        "email": "michael.jordan@example.com",
+        "homeAddress": "789 Maple Ave, Chicago, IL",
+        "password": generate_password_hash("mj"),
+        "firstName": "Michael",
+        "lastName": "Jordan",
+    },
+    {
+        "id": 4,
+        "email": "susan.williams@example.com",
+        "homeAddress": "321 Elm St, Aurora, IL",
+        "password": generate_password_hash("sw"),
+        "firstName": "Susan",
+        "lastName": "Williams",
+    },
+]
+
+@crumbl_blueprint.route("/login", methods=["POST"])
+def login():
+    # Example code - assumes you are authenticating a user and retrieving their `user_id`
+    email = request.json.get("email")
+    password = request.json.get("password")
+    user = {}
+
+    # Find user based on email
+    for u in users: 
+        if u["email"] == email: user = u
+
+    if user and check_password_hash(user["password"], password):
+        # Store the `user_id` in the session after successful login
+        session["user_id"] = user["id"]
+        return jsonify({"message": "Login successful"}), 200
+    else:
+        return jsonify({"error": "Invalid email or password"}), 401
+
+# Crumble with users_id containers
+crumbls = [
+    {
+        "name": "Chocolate Chip",
+        "description": "The classic chocolate chip cookie",
+        "quantity": 65,
+        "price": 4.99,
+        "ID": 20,
+        "user_id": 1,
+    },
+    {
+        "name": "Confetti Milk Shake",
+        "description": "A confetti sugar cookie rolled in rainbow sprinkles and topped with cake-flavored buttercream and a dollop of whipped cream",
+        "quantity": 23,
+        "price": 4.99,
+        "ID": 46,
+        "user_id": 2,
+    },
+    {
+        "name": "Kentucky Butter Cake",
+        "description": "A yellow butter cake cookie smothered with a melt-in-your-mouth buttery glaze.",
+        "quantity": 12,
+        "price": 4.99,
+        "ID": 26,
+        "user_id": 3,
+    },
+    {
+        "name": "Pink Velvet Cake Cookie",
+        "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.",
+        "quantity": 7,
+        "price": 4.99,
+        "ID": 63,
+        "user_id": 4,
+    },
+]
+
+@crumbl_blueprint.route("/mycrumbls", methods=["GET"])
+@login_required
+def myListCookies():
+    user_id = session.get("user_id")
+    user_crumbls = [crum for crum in crumbls if crum["user_id"] == user_id]
+    return jsonify(user_crumbls)
+
+@crumbl_blueprint.route("/mycrumbls/<int:cid>", methods=["GET"])
+@login_required
+def findMyCrum(cid):
+    user_id = session.get("user_id")
+    foundC = next((crum for crum in crumbls if crum["ID"] == cid and crum["user_id"] == user_id), None)
+    if foundC is None:
+        return jsonify({"error": "Crumbl Cookie not found"}), 404
+    return jsonify(foundC)
+
+@crumbl_blueprint.route("/mycrumbls", methods=["POST"])
+@login_required
+def makeMyCrum():
+    user_id = session.get("user_id")
+    if (
+        not request.json
+        or "name" not in request.json
+        or "description" not in request.json
+        or "quantity" not in request.json
+        or "price" not in request.json
+    ):
+        return jsonify({"error": "Missing information"}), 400
+    newCID = newID()
+    newCrumbl = {
+        "name": request.json["name"],
+        "description": request.json["description"],
+        "quantity": request.json["quantity"],
+        "price": request.json["price"],
+        "ID": newCID,
+        "user_id": user_id  # Associate new item with the logged-in user
+    }
+    crumbls.append(newCrumbl)
+    return jsonify(newCrumbl), 201
+
+@crumbl_blueprint.route("/mycrumbls/<int:cid>", methods=["PUT"])
+@login_required
+def updateMyCrum(cid):
+    user_id = session.get("user_id")
+    crum = next((crum for crum in crumbls if crum["ID"] == cid and crum["user_id"] == user_id), None)
+    if crum is None:
+        return jsonify({"error": "Crumbl Cookie not found or unauthorized"}), 404
+    if not request.json:
+        return jsonify({"error": "Invalid JSON format"}), 400
+
+    # Update fields if provided in request
+    crum["name"] = request.json.get("name", crum["name"])
+    crum["description"] = request.json.get("description", crum["description"])
+    crum["quantity"] = request.json.get("quantity", crum["quantity"])
+    crum["price"] = request.json.get("price", crum["price"])
+    return jsonify(crum)
+
+@crumbl_blueprint.route("/mycrumbls/<int:cid>", methods=["DELETE"])
+@login_required
+def deleteMyCrum(cid):
+    global crumbls
+    user_id = session.get("user_id")
+    crum = next((crum for crum in crumbls if crum["ID"] == cid and crum["user_id"] == user_id), None)
+    if crum is None:
+        return jsonify({"error": "Crumbl Cookie not found or unauthorized"}), 404
+    crumbls = [c for c in crumbls if not (c["ID"] == cid and c["user_id"] == user_id)]
+    return jsonify({"message": "Item deleted successfully."}), 200
+
 
 
 # -------------------------------------------------------------#
