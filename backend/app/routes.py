@@ -6,11 +6,26 @@ from flask import Blueprint, request, jsonify, session
 from functools import wraps
 # from .models import User
 from functools import wraps
+from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 # from app import db
 
+# User Container
+users = {}
+# Crumbs Container
+crumbs = {}
+# Inventories Container 
+inventories = {}
+# user_ID 
+user_id_counter = 1
+
+
 
 crumbl_blueprint = Blueprint("crumbl_blueprint", __name__)
+
+@crumbl_blueprint.route("/", methods=["GET"])
+def home():
+    return jsonify("Crumbl Backend Online!")
 
 
 # -------------------------------------------------------------#
@@ -26,23 +41,30 @@ crumbl_blueprint = Blueprint("crumbl_blueprint", __name__)
 # removes authentication cookies
 # -------------------------------------------------------------#
 
-# User Container
-users = {}
 
-
-# NOTE:  Middleware for login_required
+# NOTE: Middleware for login_required
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if "user_id" not in session:
-            return jsonify({"error": "you must be logged in access this route"}), 403
-        return f(*args, **kwargs)
+            return jsonify({"error": "You must be logged in to access this route"}), 403
 
+        # Check if session has expired
+        if 'last_activity' in session:
+            last_activity = datetime.fromtimestamp(session['last_activity'])
+            if datetime.now() - last_activity > timedelta(hours=24):
+                session.clear()  # Fixed typo: was session.clears()
+                return jsonify({"error": "Session expired, please login again"}), 401
+        
+        # Update last_activity timestamp
+        session['last_activity'] = datetime.now().timestamp()
+        return f(*args, **kwargs)
     return decorated_function
 
 
 @crumbl_blueprint.route("/register", methods=["POST"])
 def register():
+    global user_id_counter
 
     # PERF: for frontend, no need yet
     #
@@ -50,9 +72,13 @@ def register():
     #     return _build_cors_prelight_response()
 
     try:
+        # Get User Input
         email = request.json.get("email")
+        firstName = request.json.get("firstName")
+        lastName = request.json.get("lastName")
         homeAddress = request.json.get("homeAddress")
         password = request.json.get("password")
+
 
         # NOTE: For Part 2
         #
@@ -63,18 +89,48 @@ def register():
         #     return jsonify({"error": "User with this email already existed"}), 401
         # --------------------------------------------------------------#
 
+        # Validate required fields 
+        if not all([email, homeAddress, password]):
+            return jsonify({
+                "error":"Missing required fields"
+            }), 400
+
         # Check if user already exists
         if email in users:
             return jsonify({"error": "User's email is already existed"}), 400
 
+        # generate User ID 
+        user_id = f"User_{user_id_counter}"
+        user_id_counter += 1 
+
         # Secure hash password
         password_hash = generate_password_hash(password)
 
+        
+
         users[email] = {
+            "user_id": user_id,
             "email": email,
+            "firstName": firstName,
+            "lastName" : lastName,
             "homeAddress": homeAddress,
             "password": password_hash,
         }
+
+
+        # separate index of user_ids and email for quick look up 
+        if not hasattr(crumbl_blueprint, 'user_id_index'):
+            crumbl_blueprint.user_id_index = {}
+        crumbl_blueprint.user_id_index[user_id] = email
+
+        return jsonify({
+            "message": "New user Created Successfully",
+            "user":{
+                "user_id" : user_id, 
+                "email" : email,
+                "homeAddress" : homeAddress, 
+            }
+        }), 201
 
         # NOTE: For part 2
         #
@@ -89,13 +145,59 @@ def register():
         # db.session.commit()
         # --------------------------------------------------------------#
 
-        return (jsonify({"message": "New User Created Successfully !"}), 202)
+        # return (jsonify({"message": "New User Created Successfully !"}), 202)
     except Exception as e:
-        import traceback
+        return jsonify({"error": f"Failed to register user: {str(e)}"}), 500
 
-        traceback.print_exc()
-        return jsonify({"error": f"Failed to register user: {str(e)}"}), 501
+@crumbl_blueprint.route("/users" , methods=["GET"])
+def list_users():
+    return jsonify({"user":users}), 200
 
+
+# NOTE: Login route 
+@crumbl_blueprint.route("/login", methods=["POST"])
+def login():
+    try:
+        email = request.json.get("email")
+        password = request.json.get("password")
+
+        # Check if user exist 
+        if email not in users:
+            return jsonify({"error" : "Invalid email or password "}),401
+        
+        user = users[email]
+
+        # verify password 
+        if not check_password_hash(user["password"] , password):
+            return jsonify({"error" : "Invalid email or password"}),401 
+
+        # create session
+        session["user_id"] = user["user_id"] 
+        session["logged_in"] = True
+        session["last_activity"] = datetime.now().timestamp()
+
+        # Set session to expire after 24 hours 
+        session.permanent = True
+        
+        return jsonify({
+            "message":"Login successfully",
+            "user":{
+                "email":user["email"],
+            }
+        }),200
+    except Exception as e:
+        return jsonify({"error":f"Login failed : {str(e)}"}),500
+
+
+@crumbl_blueprint.route("/logout", methods=["POST"])
+@login_required
+def logout():
+    try:
+        # Clear all session data
+        session.clear()
+        return jsonify({"message": "Logged out successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": f"Logout failed: {str(e)}"}), 500
 
 # -------------------------------------------------------------#
 # TODO: CRUD Operations for Inventory: - BETTY
@@ -110,41 +212,6 @@ def register():
 # -------------------------------------------------------------#
 
 
-# crumbls = [
-#     {
-#         "name": "Chocolate Chip",
-#         "description": "The classic chocolate chip cookie",
-#         "quantity": 65,
-#         "price": 4.99,
-#         "ID": 20,
-#     },
-#     {
-#         "name": "Confetti Milk Shake",
-#         "description": "A confetti sugar cookie rolled in rainbow sprinkles and topped with cake-flavored buttercream and a dollop of whipped cream",
-#         "quantity": 23,
-#         "price": 4.99,
-#         "ID": 46,
-#     },
-#     {
-#         "name": "Kentucky Butter Cake",
-#         "description": "A yellow butter cake cookie smothered with a melt-in-your-mouth buttery glaze.",
-#         "quantity": 12,
-#         "price": 4.99,
-#         "ID": 26,
-#     },
-#     {
-#         "name": "Pink Velvet Cake Cookie",
-#         "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.",
-#         "quantity": 7,
-#         "price": 4.99,
-#         "ID": 63,
-#     },
-# ]
-
-
-@crumbl_blueprint.route("/", methods=["GET"])
-def home():
-    return jsonify("Backend Online!")
 
 # compares and finds cookie
 def findCrumbl(cid):
@@ -273,24 +340,26 @@ users = [
     },
 ]
 
-@crumbl_blueprint.route("/login", methods=["POST"])
-def login():
-    # Example code - assumes you are authenticating a user and retrieving their `user_id`
-    email = request.json.get("email")
-    password = request.json.get("password")
-    user = {}
-
-    # Find user based on email
-    for u in users: 
-        if u["email"] == email: user = u
-
-    if user and check_password_hash(user["password"], password):
-        # Store the `user_id` in the session after successful login
-        session["user_id"] = user["id"]
-        return jsonify({"message": "Login successful"}), 200
-    else:
-        return jsonify({"error": "Invalid email or password"}), 401
-
+#-----------------------------------------------------------------------------------------#
+# @crumbl_blueprint.route("/login", methods=["POST"])
+# def login():
+#     # Example code - assumes you are authenticating a user and retrieving their `user_id`
+#     email = request.json.get("email")
+#     password = request.json.get("password")
+#     user = {}
+#
+#     # Find user based on email
+#     for u in users: 
+#         if u["email"] == email: user = u
+#
+#     if user and check_password_hash(user["password"], password):
+#         # Store the `user_id` in the session after successful login
+#         session["user_id"] = user["id"]
+#         return jsonify({"message": "Login successful"}), 200
+#     else:
+#         return jsonify({"error": "Invalid email or password"}), 401
+#
+#-----------------------------------------------------------------------------------------#
 # Crumble with users_id containers
 crumbls = [
     {
@@ -403,3 +472,42 @@ def deleteMyCrum(cid):
 # - Implement proper session expiration handing to automatically
 # log out.
 # -------------------------------------------------------------#
+
+
+
+
+
+
+
+
+
+# crumbls = [
+#     {
+#         "name": "Chocolate Chip",
+#         "description": "The classic chocolate chip cookie",
+#         "quantity": 65,
+#         "price": 4.99,
+#         "ID": 20,
+#     },
+#     {
+#         "name": "Confetti Milk Shake",
+#         "description": "A confetti sugar cookie rolled in rainbow sprinkles and topped with cake-flavored buttercream and a dollop of whipped cream",
+#         "quantity": 23,
+#         "price": 4.99,
+#         "ID": 46,
+#     },
+#     {
+#         "name": "Kentucky Butter Cake",
+#         "description": "A yellow butter cake cookie smothered with a melt-in-your-mouth buttery glaze.",
+#         "quantity": 12,
+#         "price": 4.99,
+#         "ID": 26,
+#     },
+#     {
+#         "name": "Pink Velvet Cake Cookie",
+#         "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.",
+#         "quantity": 7,
+#         "price": 4.99,
+#         "ID": 63,
+#     },
+# ]
