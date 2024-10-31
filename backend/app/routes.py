@@ -18,6 +18,11 @@ crumbs = {}
 inventories = {}
 # user_ID 
 user_id_counter = 1
+# crumb_id
+crumb_id_counter = 1
+# inventory_item id 
+inventory_id_counter = 1
+
 
 
 
@@ -213,79 +218,148 @@ def logout():
 
 
 
-# compares and finds cookie
-def findCrumbl(cid):
-    for crum in crumbls:
-        if crum["ID"] == cid:
-            return crum
-    return None
+# -------------------------------------------------------------#
+# # compares and finds cookie
+# def findCrumbl(cid):
+#     for crum in crumbls:
+#         if crum["ID"] == cid:
+#             return crum
+#     return None
+#
+# #assigns a ranom ID number to cookie and ensures it isnt a repeat
+# def newID():
+#     while True:
+#         nid = random.randint(1, 100)
+#         if findCrumbl(nid) is None:
+#             return nid
+#
+# #lists full list of cookies
+# @crumbl_blueprint.route("/crumbls", methods=["GET"])
+# def listCookies():
+#     return jsonify(crumbls)
+#
+# #find specific cookie by ID number
+# @crumbl_blueprint.route("/crumbls/<int:cid>", methods=["GET"])
+# def findCrum(cid):
+#     foundC = findCrumbl(cid)
+#     if foundC is None:
+#         return jsonify("error: Crumbl Cookie not found"), 404
+#     return jsonify(foundC)
+#
+# #creates new crumbl cookie
+# @crumbl_blueprint.route("/crumbls", methods=["POST"])
+# def makeCrum():
+#     if (
+#         not request.json
+#         or "name" not in request.json
+#         or "description" not in request.json
+#         or "quantity" not in request.json
+#         or "price" not in request.json
+#     ):
+#         return jsonify("error missing information"),400
+#     newCID = newID()
+#     newCrumbl = {
+#         "name": request.json["name"],
+#         "description": request.json["description"],
+#         "quantity": request.json["quantity"],
+#         "price": request.json["price"],
+#         "ID": newCID,
+#     }
+#     crumbls.append(newCrumbl)
+#     return jsonify(newCrumbl), 201
+#
+# #updates existing cookie
+# @crumbl_blueprint.route("/crumbls/<int:cid>", methods=["PUT"])
+# def updateCrum(cid):
+#     crum = findCrumbl(cid)
+#     if crum is None:
+#         jsonify('could not find cookie to update'), 404
+#     if not request.json:
+#         jsonify('please use proper json standards'), 400
+#     crum['name']= request.json.get('name',crum['name'])
+#     crum['description']= request.json.get('description',crum['description'])
+#     crum['quantity']= request.json.get('quantity',crum['quantity'])
+#     crum['price']= request.json.get('price',crum['price'])
+#     return jsonify(crum)
+#
+# #deletes crumbl cookie
+# @crumbl_blueprint.route("/crumbls/<int:cid>", methods=["DELETE"])
+# def deleteCrum(cid):
+#     global crumbls
+#     crum = findCrum(cid)
+#     if crum is None:
+#         return jsonify('Crumble cookie could not be found'), 404
+#     crumbls = [c for c in crumbls if c['ID']!=cid]
+#     return '', 204
+#
+# -------------------------------------------------------------#
 
-#assigns a ranom ID number to cookie and ensures it isnt a repeat
-def newID():
-    while True:
-        nid = random.randint(1, 100)
-        if findCrumbl(nid) is None:
-            return nid
 
-#lists full list of cookies
-@crumbl_blueprint.route("/crumbls", methods=["GET"])
-def listCookies():
-    return jsonify(crumbls)
 
-#find specific cookie by ID number
-@crumbl_blueprint.route("/crumbls/<int:cid>", methods=["GET"])
-def findCrum(cid):
-    foundC = findCrumbl(cid)
-    if foundC is None:
-        return jsonify("error: Crumbl Cookie not found"), 404
-    return jsonify(foundC)
-
-#creates new crumbl cookie
-@crumbl_blueprint.route("/crumbls", methods=["POST"])
-def makeCrum():
-    if (
-        not request.json
-        or "name" not in request.json
-        or "description" not in request.json
-        or "quantity" not in request.json
-        or "price" not in request.json
-    ):
-        return jsonify("error missing information"),400
-    newCID = newID()
-    newCrumbl = {
-        "name": request.json["name"],
-        "description": request.json["description"],
-        "quantity": request.json["quantity"],
-        "price": request.json["price"],
-        "ID": newCID,
+# Sample structure for creating a new crumb
+def create_crumb(cookie_name, description):
+    global crumb_id_counter
+    crumb_id = f"CRUMB_{crumb_id_counter}"
+    crumb_id_counter += 1
+    
+    crumbs[crumb_id] = {
+        "crumb_id": crumb_id,
+        "cookie_name": cookie_name,
+        "description": description
     }
-    crumbls.append(newCrumbl)
-    return jsonify(newCrumbl), 201
+    return crumb_id
 
-#updates existing cookie
-@crumbl_blueprint.route("/crumbls/<int:cid>", methods=["PUT"])
-def updateCrum(cid):
-    crum = findCrumbl(cid)
-    if crum is None:
-        jsonify('could not find cookie to update'), 404
-    if not request.json:
-        jsonify('please use proper json standards'), 400
-    crum['name']= request.json.get('name',crum['name'])
-    crum['description']= request.json.get('description',crum['description'])
-    crum['quantity']= request.json.get('quantity',crum['quantity'])
-    crum['price']= request.json.get('price',crum['price'])
-    return jsonify(crum)
+# Structure for managing inventory
+def add_to_inventory(user_id, crumb_id, quantity, price):
+    global inventory_id_counter
+    
+    if user_id not in users:
+        return False, "User not found"
+    
+    if crumb_id not in crumbs:
+        return False, "Cookie not found"
+    
+    # Generate unique inventory ID
+    inventory_id = f"INV_{inventory_id_counter}"
+    inventory_id_counter += 1
+    
+    inventories[inventory_id] = {
+        "inventory_id": inventory_id,
+        "user_id": user_id,
+        "crumb_id": crumb_id,
+        "quantity": quantity,
+        "price": price
+    }
+    return True, inventory_id
 
-#deletes crumbl cookie
-@crumbl_blueprint.route("/crumbls/<int:cid>", methods=["DELETE"])
-def deleteCrum(cid):
-    global crumbls
-    crum = findCrum(cid)
-    if crum is None:
-        return jsonify('Crumble cookie could not be found'), 404
-    crumbls = [c for c in crumbls if c['ID']!=cid]
-    return '', 204
+# Helper function to get user's inventory
+def get_user_inventory(user_id):
+    if user_id not in users:
+        return []
+    
+    user_inventory = []
+    for inv_id, inv_data in inventories.items():
+        if inv_data["user_id"] == user_id:
+            # Combine inventory data with cookie details
+            crumb_data = crumbs[inv_data["crumb_id"]]
+            inventory_item = {
+                "inventory_id": inv_data["inventory_id"],
+                "crumb_id": inv_data["crumb_id"],
+                "cookie_name": crumb_data["cookie_name"],
+                "description": crumb_data["description"],
+                "quantity": inv_data["quantity"],
+                "price": inv_data["price"]
+            }
+            user_inventory.append(inventory_item)
+    
+    return user_inventory
 
+# Get all inventory entries for a specific user and cookie
+def get_user_cookie_inventories(user_id, crumb_id):
+    return [
+        inv_data for inv_data in inventories.values()
+        if inv_data["user_id"] == user_id and inv_data["crumb_id"] == crumb_id
+    ]
 
 
 # -------------------------------------------------------------#
@@ -306,166 +380,335 @@ def deleteCrum(cid):
 # - Add: `app.secret_key="YOUR_SECRET_KEY"` in __init__.py. 
 # -------------------------------------------------------------#
 
-# Mocking users and Login 
-users = [
-    {
-        "id": 1,
-        "email": "john.doe@example.com",
-        "homeAddress": "123 Main St, Springfield, IL",
-        "password": generate_password_hash("jd"),
-    },
-    {
-        "id": 2,
-        "email": "jane.smith@example.com",
-        "homeAddress": "456 Oak St, Springfield, IL",
-        "password": generate_password_hash("js"),
-        "firstName": "Jane",
-        "lastName": "Smith",
-    },
-    {
-        "id": 3,
-        "email": "michael.jordan@example.com",
-        "homeAddress": "789 Maple Ave, Chicago, IL",
-        "password": generate_password_hash("mj"),
-        "firstName": "Michael",
-        "lastName": "Jordan",
-    },
-    {
-        "id": 4,
-        "email": "susan.williams@example.com",
-        "homeAddress": "321 Elm St, Aurora, IL",
-        "password": generate_password_hash("sw"),
-        "firstName": "Susan",
-        "lastName": "Williams",
-    },
-]
-
-#-----------------------------------------------------------------------------------------#
-# @crumbl_blueprint.route("/login", methods=["POST"])
-# def login():
-#     # Example code - assumes you are authenticating a user and retrieving their `user_id`
-#     email = request.json.get("email")
-#     password = request.json.get("password")
-#     user = {}
+# -------------------------------------------------------------#
+# # Mocking users and Login 
+# users = [
+#     {
+#         "id": 1,
+#         "email": "john.doe@example.com",
+#         "homeAddress": "123 Main St, Springfield, IL",
+#         "password": generate_password_hash("jd"),
+#     },
+#     {
+#         "id": 2,
+#         "email": "jane.smith@example.com",
+#         "homeAddress": "456 Oak St, Springfield, IL",
+#         "password": generate_password_hash("js"),
+#         "firstName": "Jane",
+#         "lastName": "Smith",
+#     },
+#     {
+#         "id": 3,
+#         "email": "michael.jordan@example.com",
+#         "homeAddress": "789 Maple Ave, Chicago, IL",
+#         "password": generate_password_hash("mj"),
+#         "firstName": "Michael",
+#         "lastName": "Jordan",
+#     },
+#     {
+#         "id": 4,
+#         "email": "susan.williams@example.com",
+#         "homeAddress": "321 Elm St, Aurora, IL",
+#         "password": generate_password_hash("sw"),
+#         "firstName": "Susan",
+#         "lastName": "Williams",
+#     },
+# ]
 #
-#     # Find user based on email
-#     for u in users: 
-#         if u["email"] == email: user = u
+# #-----------------------------------------------------------------------------------------#
+# # @crumbl_blueprint.route("/login", methods=["POST"])
+# # def login():
+# #     # Example code - assumes you are authenticating a user and retrieving their `user_id`
+# #     email = request.json.get("email")
+# #     password = request.json.get("password")
+# #     user = {}
+# #
+# #     # Find user based on email
+# #     for u in users: 
+# #         if u["email"] == email: user = u
+# #
+# #     if user and check_password_hash(user["password"], password):
+# #         # Store the `user_id` in the session after successful login
+# #         session["user_id"] = user["id"]
+# #         return jsonify({"message": "Login successful"}), 200
+# #     else:
+# #         return jsonify({"error": "Invalid email or password"}), 401
+# #
+# #-----------------------------------------------------------------------------------------#
+# # Crumble with users_id containers
+# crumbls = [
+#     {
+#         "name": "Chocolate Chip",
+#         "description": "The classic chocolate chip cookie",
+#         "quantity": 65,
+#         "price": 4.99,
+#         "ID": 20,
+#         "user_id": 1,
+#     },
+#     {
+#         "name": "Confetti Milk Shake",
+#         "description": "A confetti sugar cookie rolled in rainbow sprinkles and topped with cake-flavored buttercream and a dollop of whipped cream",
+#         "quantity": 23,
+#         "price": 4.99,
+#         "ID": 46,
+#         "user_id": 2,
+#     },
+#     {
+#         "name": "Kentucky Butter Cake",
+#         "description": "A yellow butter cake cookie smothered with a melt-in-your-mouth buttery glaze.",
+#         "quantity": 12,
+#         "price": 4.99,
+#         "ID": 26,
+#         "user_id": 3,
+#     },
+#     {
+#         "name": "Pink Velvet Cake Cookie",
+#         "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.",
+#         "quantity": 7,
+#         "price": 4.99,
+#         "ID": 63,
+#         "user_id": 4,
+#     },
+# ]
 #
-#     if user and check_password_hash(user["password"], password):
-#         # Store the `user_id` in the session after successful login
-#         session["user_id"] = user["id"]
-#         return jsonify({"message": "Login successful"}), 200
-#     else:
-#         return jsonify({"error": "Invalid email or password"}), 401
+# @crumbl_blueprint.route("/mycrumbls", methods=["GET"])
+# @login_required
+# def myListCookies():
+#     user_id = session.get("user_id")
+#     user_crumbls = [crum for crum in crumbls if crum["user_id"] == user_id]
+#     return jsonify(user_crumbls)
 #
-#-----------------------------------------------------------------------------------------#
-# Crumble with users_id containers
-crumbls = [
-    {
-        "name": "Chocolate Chip",
-        "description": "The classic chocolate chip cookie",
-        "quantity": 65,
-        "price": 4.99,
-        "ID": 20,
-        "user_id": 1,
-    },
-    {
-        "name": "Confetti Milk Shake",
-        "description": "A confetti sugar cookie rolled in rainbow sprinkles and topped with cake-flavored buttercream and a dollop of whipped cream",
-        "quantity": 23,
-        "price": 4.99,
-        "ID": 46,
-        "user_id": 2,
-    },
-    {
-        "name": "Kentucky Butter Cake",
-        "description": "A yellow butter cake cookie smothered with a melt-in-your-mouth buttery glaze.",
-        "quantity": 12,
-        "price": 4.99,
-        "ID": 26,
-        "user_id": 3,
-    },
-    {
-        "name": "Pink Velvet Cake Cookie",
-        "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.",
-        "quantity": 7,
-        "price": 4.99,
-        "ID": 63,
-        "user_id": 4,
-    },
-]
+# @crumbl_blueprint.route("/mycrumbls/<int:cid>", methods=["GET"])
+# @login_required
+# def findMyCrum(cid):
+#     user_id = session.get("user_id")
+#     foundC = next((crum for crum in crumbls if crum["ID"] == cid and crum["user_id"] == user_id), None)
+#     if foundC is None:
+#         return jsonify({"error": "Crumbl Cookie not found"}), 404
+#     return jsonify(foundC)
+#
+# @crumbl_blueprint.route("/mycrumbls", methods=["POST"])
+# @login_required
+# def makeMyCrum():
+#     user_id = session.get("user_id")
+#     if (
+#         not request.json
+#         or "name" not in request.json
+#         or "description" not in request.json
+#         or "quantity" not in request.json
+#         or "price" not in request.json
+#     ):
+#         return jsonify({"error": "Missing information"}), 400
+#     newCID = newID()
+#     newCrumbl = {
+#         "name": request.json["name"],
+#         "description": request.json["description"],
+#         "quantity": request.json["quantity"],
+#         "price": request.json["price"],
+#         "ID": newCID,
+#         "user_id": user_id  # Associate new item with the logged-in user
+#     }
+#     crumbls.append(newCrumbl)
+#     return jsonify(newCrumbl), 201
+#
+# @crumbl_blueprint.route("/mycrumbls/<int:cid>", methods=["PUT"])
+# @login_required
+# def updateMyCrum(cid):
+#     user_id = session.get("user_id")
+#     crum = next((crum for crum in crumbls if crum["ID"] == cid and crum["user_id"] == user_id), None)
+#     if crum is None:
+#         return jsonify({"error": "Crumbl Cookie not found or unauthorized"}), 404
+#     if not request.json:
+#         return jsonify({"error": "Invalid JSON format"}), 400
+#
+#     # Update fields if provided in request
+#     crum["name"] = request.json.get("name", crum["name"])
+#     crum["description"] = request.json.get("description", crum["description"])
+#     crum["quantity"] = request.json.get("quantity", crum["quantity"])
+#     crum["price"] = request.json.get("price", crum["price"])
+#     return jsonify(crum)
+#
+# @crumbl_blueprint.route("/mycrumbls/<int:cid>", methods=["DELETE"])
+# @login_required
+# def deleteMyCrum(cid):
+#     global crumbls
+#     user_id = session.get("user_id")
+#     crum = next((crum for crum in crumbls if crum["ID"] == cid and crum["user_id"] == user_id), None)
+#     if crum is None:
+#         return jsonify({"error": "Crumbl Cookie not found or unauthorized"}), 404
+#     crumbls = [c for c in crumbls if not (c["ID"] == cid and c["user_id"] == user_id)]
+#     return jsonify({"message": "Item deleted successfully."}), 200
+#
+#----------------------------------------------------------------------------------------#
 
-@crumbl_blueprint.route("/mycrumbls", methods=["GET"])
+# Example routes for CRUD operations
+@crumbl_blueprint.route("/inventory", methods=["POST"])
 @login_required
-def myListCookies():
-    user_id = session.get("user_id")
-    user_crumbls = [crum for crum in crumbls if crum["user_id"] == user_id]
-    return jsonify(user_crumbls)
+def add_inventory():
+    try:
+        # getting user_id from session
+        user_id = session["user_id"]  
+        # extract crumb_id quantity and price from request 
+        crumb_id = request.json.get("crumb_id")
+        quantity = request.json.get("quantity")
+        price = request.json.get("price")
+        
+        if not all([crumb_id, quantity, price]):
+            return jsonify({"error": "Missing required fields"}), 400
+            
+        success, inventory_id = add_to_inventory(user_id, crumb_id, quantity, price)
+        
+        if not success:
+            return jsonify({"error": inventory_id}), 400
+            
+        return jsonify({
+            "message": "Inventory added successfully",
+            "inventory": inventories[inventory_id]
+        }), 201
+        
+    except Exception as e:
+        return jsonify({"error": f"Failed to add inventory: {str(e)}"}), 500
 
-@crumbl_blueprint.route("/mycrumbls/<int:cid>", methods=["GET"])
+# Example: Get all inventory entries for a specific cookie
+@crumbl_blueprint.route("/inventory/cookie/<crumb_id>", methods=["GET"])
 @login_required
-def findMyCrum(cid):
-    user_id = session.get("user_id")
-    foundC = next((crum for crum in crumbls if crum["ID"] == cid and crum["user_id"] == user_id), None)
-    if foundC is None:
-        return jsonify({"error": "Crumbl Cookie not found"}), 404
-    return jsonify(foundC)
+def get_cookie_inventories(crumb_id):
+    try:
+        user_id = session["user_id"]
+        inventories_list = get_user_cookie_inventories(user_id, crumb_id)
+        
+        return jsonify({
+            "inventories": inventories_list
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Failed to get inventories: {str(e)}"}), 500
 
-@crumbl_blueprint.route("/mycrumbls", methods=["POST"])
+# Update inventory entry
+@crumbl_blueprint.route("/inventory/<inventory_id>", methods=["PUT"])
 @login_required
-def makeMyCrum():
-    user_id = session.get("user_id")
-    if (
-        not request.json
-        or "name" not in request.json
-        or "description" not in request.json
-        or "quantity" not in request.json
-        or "price" not in request.json
-    ):
-        return jsonify({"error": "Missing information"}), 400
-    newCID = newID()
-    newCrumbl = {
-        "name": request.json["name"],
-        "description": request.json["description"],
-        "quantity": request.json["quantity"],
-        "price": request.json["price"],
-        "ID": newCID,
-        "user_id": user_id  # Associate new item with the logged-in user
-    }
-    crumbls.append(newCrumbl)
-    return jsonify(newCrumbl), 201
+def update_inventory(inventory_id):
+    try:
+        user_id = session["user_id"]
+        
+        if inventory_id not in inventories:
+            return jsonify({"error": "Inventory not found"}), 404
+            
+        inventory = inventories[inventory_id]
+        if inventory["user_id"] != user_id:
+            return jsonify({"error": "Unauthorized access"}), 403
+            
+        # Update quantity and/or price
+        if "quantity" in request.json:
+            inventory["quantity"] = request.json["quantity"]
+        if "price" in request.json:
+            inventory["price"] = request.json["price"]
+            
+        return jsonify({
+            "message": "Inventory updated successfully",
+            "inventory": inventory
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Failed to update inventory: {str(e)}"}), 500
 
-@crumbl_blueprint.route("/mycrumbls/<int:cid>", methods=["PUT"])
+# Cookie CRUD Operations
+@crumbl_blueprint.route("/cookies", methods=["POST"])
 @login_required
-def updateMyCrum(cid):
-    user_id = session.get("user_id")
-    crum = next((crum for crum in crumbls if crum["ID"] == cid and crum["user_id"] == user_id), None)
-    if crum is None:
-        return jsonify({"error": "Crumbl Cookie not found or unauthorized"}), 404
-    if not request.json:
-        return jsonify({"error": "Invalid JSON format"}), 400
+def create_cookie():
+    try:
+        # Extract cookie details from request
+        cookie_name = request.json.get("cookie_name")
+        description = request.json.get("description")
+        
+        # Validate required fields
+        if not all([cookie_name, description]):
+            return jsonify({
+                "error": "Missing required fields. Cookie name and description are required."
+            }), 400
+            
+        # Create new cookie
+        crumb_id = create_crumb(cookie_name, description)
+        
+        return jsonify({
+            "message": "Cookie created successfully",
+            "cookie": crumbs[crumb_id]
+        }), 201
+        
+    except Exception as e:
+        return jsonify({"error": f"Failed to create cookie: {str(e)}"}), 500
 
-    # Update fields if provided in request
-    crum["name"] = request.json.get("name", crum["name"])
-    crum["description"] = request.json.get("description", crum["description"])
-    crum["quantity"] = request.json.get("quantity", crum["quantity"])
-    crum["price"] = request.json.get("price", crum["price"])
-    return jsonify(crum)
+# Get all cookies (public catalog)
+@crumbl_blueprint.route("/cookies", methods=["GET"])
+def get_all_cookies():
+    try:
+        return jsonify({
+            "cookies": list(crumbs.values())
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch cookies: {str(e)}"}), 500
 
-@crumbl_blueprint.route("/mycrumbls/<int:cid>", methods=["DELETE"])
+# Get specific cookie
+@crumbl_blueprint.route("/cookies/<crumb_id>", methods=["GET"])
+def get_cookie(crumb_id):
+    try:
+        if crumb_id not in crumbs:
+            return jsonify({"error": "Cookie not found"}), 404
+            
+        return jsonify(crumbs[crumb_id]), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch cookie: {str(e)}"}), 500
+
+# Update cookie details
+@crumbl_blueprint.route("/cookies/<crumb_id>", methods=["PUT"])
 @login_required
-def deleteMyCrum(cid):
-    global crumbls
-    user_id = session.get("user_id")
-    crum = next((crum for crum in crumbls if crum["ID"] == cid and crum["user_id"] == user_id), None)
-    if crum is None:
-        return jsonify({"error": "Crumbl Cookie not found or unauthorized"}), 404
-    crumbls = [c for c in crumbls if not (c["ID"] == cid and c["user_id"] == user_id)]
-    return jsonify({"message": "Item deleted successfully."}), 200
+def update_cookie(crumb_id):
+    try:
+        if crumb_id not in crumbs:
+            return jsonify({"error": "Cookie not found"}), 404
+            
+        cookie = crumbs[crumb_id]
+        
+        # Update fields if provided
+        if "cookie_name" in request.json:
+            cookie["cookie_name"] = request.json["cookie_name"]
+        if "description" in request.json:
+            cookie["description"] = request.json["description"]
+            
+        return jsonify({
+            "message": "Cookie updated successfully",
+            "cookie": cookie
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Failed to update cookie: {str(e)}"}), 500
 
-
-
+# Delete cookie
+@crumbl_blueprint.route("/cookies/<crumb_id>", methods=["DELETE"])
+@login_required
+def delete_cookie(crumb_id):
+    try:
+        if crumb_id not in crumbs:
+            return jsonify({"error": "Cookie not found"}), 404
+            
+        # Check if cookie is being used in any inventory
+        for inventory in inventories.values():
+            if inventory["crumb_id"] == crumb_id:
+                return jsonify({
+                    "error": "Cannot delete cookie that exists in inventories"
+                }), 400
+                
+        # Delete the cookie
+        del crumbs[crumb_id]
+        
+        return jsonify({
+            "message": "Cookie deleted successfully"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Failed to delete cookie: {str(e)}"}), 500
 # -------------------------------------------------------------#
 # TODO: Session and Cookie Security: - MATHEW
 # - Secure user sessions with encryption (Flask Security key)
