@@ -34,7 +34,7 @@ def home():
 
 
 # -------------------------------------------------------------#
-# TODO: User Authentication With Sessions and Cookies: - SHANTANU , KYLE
+# TODO: User Authentication With Sessions and Cookies: - KYLE
 # - User Login (SHANTANU) :  Implement user login functionality where
 # a user can log in by providing credentials (username and
 # password). Use sessions and cookies to track and maintain login states.
