@@ -14,16 +14,31 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 # User Container
 users = {}
-# Crumbs Container
-crumbs = {}
+
 # Inventories Container
 inventories = {}
 # user_ID
 user_id_counter = 1
-# crumb_id
-crumb_id_counter = 1
+
 # inventory_item id
 inventory_id_counter = 1
+
+
+# -------------------------------------------------------------#
+# NOTE: For Public
+
+# Crumbs Container
+crumbs_public = {}
+# crumb_id
+crumb_id_public = 1
+
+# NOTE: For Private
+
+# Crumbs Container
+crumbs_private = {}
+# crumb_id
+crumb_id_private = 1
+# -------------------------------------------------------------#
 
 
 crumbl_blueprint = Blueprint("crumbl_blueprint", __name__)
