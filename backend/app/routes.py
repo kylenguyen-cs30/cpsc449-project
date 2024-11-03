@@ -28,9 +28,36 @@ inventory_id_counter = 1
 # NOTE: For Public
 
 # Crumbs Container
-crumbs_public = {}
+crumbls_public = [{
+         "name": "Chocolate Chip",
+         "description": "The classic chocolate chip cookie",
+         "quantity": 65,
+         "price": 4.99,
+         "ID": 20,
+     },
+     {
+         "name": "Confetti Milk Shake",
+         "description": "A confetti sugar cookie rolled in rainbow sprinkles and topped with cake-flavored buttercream and a dollop of whipped cream",
+         "quantity": 23,
+         "price": 4.99,
+         "ID": 46,
+     },
+     {
+         "name": "Kentucky Butter Cake",
+         "description": "A yellow butter cake cookie smothered with a melt-in-your-mouth buttery glaze.",
+         "quantity": 12,
+         "price": 4.99,
+         "ID": 26,
+     },
+     {
+         "name": "Pink Velvet Cake Cookie",
+         "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.",
+         "quantity": 7,
+         "price": 4.99,
+         "ID": 63,
+   }]
 # crumb_id
-crumb_id_public = 1
+crumbl_id_public = 1
 
 # NOTE: For Private
 
@@ -242,15 +269,15 @@ def logout():
 
 # compares and finds cookie
 def findCrumbl(cid):
-    for crum in crumbls:
+    for crum in crumbls_public:
         if crum["ID"] == cid:
             return crum
     return None
 
-
+#comment this out later
 # assigns a ranom ID number to cookie and ensures it isnt a repeat
 def newID():
-    while True:
+   while True:
         nid = random.randint(1, 100)
         if findCrumbl(nid) is None:
             return nid
@@ -259,7 +286,7 @@ def newID():
 # lists full list of cookies
 @crumbl_blueprint.route("/crumbls", methods=["GET"])
 def listCookies():
-    return jsonify(crumbls)
+    return jsonify(crumbls_public)
 
 
 # find specific cookie by ID number
@@ -274,6 +301,7 @@ def findCrum(cid):
 # creates new crumbl cookie
 @crumbl_blueprint.route("/crumbls", methods=["POST"])
 def makeCrum():
+    global crumbl_id_public
     if (
         not request.json
         or "name" not in request.json
@@ -282,15 +310,20 @@ def makeCrum():
         or "price" not in request.json
     ):
         return jsonify("error missing information"), 400
-    newCID = newID()
+    while True:
+        nID = crumbl_id_public
+        crumbl_id_public += 1
+        if findCrumbl(nID) is None:
+           break
+        
     newCrumbl = {
         "name": request.json["name"],
         "description": request.json["description"],
         "quantity": request.json["quantity"],
         "price": request.json["price"],
-        "ID": newCID,
+        "ID": nID,
     }
-    crumbls.append(newCrumbl)
+    crumbls_public.append(newCrumbl)
     return jsonify(newCrumbl), 201
 
 
@@ -312,11 +345,11 @@ def updateCrum(cid):
 # deletes crumbl cookie
 @crumbl_blueprint.route("/crumbls/<int:cid>", methods=["DELETE"])
 def deleteCrum(cid):
-    global crumbls
+    global crumbls_public
     crum = findCrum(cid)
     if crum is None:
         return jsonify("Crumble cookie could not be found"), 404
-    crumbls = [c for c in crumbls if c["ID"] != cid]
+    crumbls_public = [c for c in crumbls if c["ID"] != cid]
     return "", 204
 
 
@@ -519,33 +552,4 @@ def deleteMyCrum(cid):
 # -------------------------------------------------------------#
 
 
-# crumbls = [
-#     {
-#         "name": "Chocolate Chip",
-#         "description": "The classic chocolate chip cookie",
-#         "quantity": 65,
-#         "price": 4.99,
-#         "ID": 20,
-#     },
-#     {
-#         "name": "Confetti Milk Shake",
-#         "description": "A confetti sugar cookie rolled in rainbow sprinkles and topped with cake-flavored buttercream and a dollop of whipped cream",
-#         "quantity": 23,
-#         "price": 4.99,
-#         "ID": 46,
-#     },
-#     {
-#         "name": "Kentucky Butter Cake",
-#         "description": "A yellow butter cake cookie smothered with a melt-in-your-mouth buttery glaze.",
-#         "quantity": 12,
-#         "price": 4.99,
-#         "ID": 26,
-#     },
-#     {
-#         "name": "Pink Velvet Cake Cookie",
-#         "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.",
-#         "quantity": 7,
-#         "price": 4.99,
-#         "ID": 63,
-#     },
-# ]
+
