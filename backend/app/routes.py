@@ -87,106 +87,13 @@ users = {}
 user_id_counter = 1
 
 
-# --------------------------------------------------------------#
-# @crumbl_blueprint.route("/register", methods=["POST"])
-# def register():
-#     global user_id_counter
-#
-#     # PERF: for frontend, no need yet
-#     #
-#     # if request.method == "OPTIONS":
-#     #     return _build_cors_prelight_response()
-#
-#     try:
-#         # Get User Input
-#         email = request.json.get("email")
-#         firstName = request.json.get("firstName")
-#         lastName = request.json.get("lastName")
-#         homeAddress = request.json.get("homeAddress")
-#         password = request.json.get("password")
-#
-#         # NOTE: For Part 2
-#         #
-#         # --------------------------------------------------------------#
-#         # checking if the user is already existing
-#         # existing_user = User.query.filter_by(email=email).first()
-#         # if existing_user:
-#         #     return jsonify({"error": "User with this email already existed"}), 401
-#         # --------------------------------------------------------------#
-#
-#         # Validate required fields
-#         if not all([email, homeAddress, password]):
-#             return jsonify({"error": "Missing required fields"}), 400
-#
-#         # Initialize users dict if it doesn't exist
-#         if not hasattr(crumbl_blueprint, "users"):
-#             crumbl_blueprint.users = {}
-#
-#         # Check if user already exists
-#         if email in crumbl_blueprint.users:
-#             return jsonify({"error": "User's email already exists"}), 400
-#
-#         # Initialize user_id_counter if it doesn't exist
-#         if not hasattr(crumbl_blueprint, "user_id_counter"):
-#             crumbl_blueprint.user_id_counter = 1
-#
-#         # Generate User ID
-#         user_id = f"User_{crumbl_blueprint.user_id_counter}"
-#         crumbl_blueprint.user_id_counter += 1
-#
-#         # Secure hash password
-#         password_hash = generate_password_hash(password)
-#
-#         users[email] = {
-#             "user_id": user_id,
-#             "email": email,
-#             "firstName": firstName,
-#             "lastName": lastName,
-#             "homeAddress": homeAddress,
-#             "password": password_hash,
-#         }
-#
-#         # separate index of user_ids and email for quick look up
-#         if not hasattr(crumbl_blueprint, "user_id_index"):
-#             crumbl_blueprint.user_id_index = {}
-#         crumbl_blueprint.user_id_index[user_id] = email
-#
-#         return (
-#             jsonify(
-#                 {
-#                     "message": "New user Created Successfully",
-#                     "user": {
-#                         "user_id": user_id,
-#                         "email": email,
-#                         "homeAddress": homeAddress,
-#                     },
-#                 }
-#             ),
-#             201,
-#         )
-#
-#         # NOTE: For part 2
-#         #
-#         # --------------------------------------------------------------#
-#         # new_user = User(
-#         #     email=email,
-#         #     password=password,
-#         #     homeAddress=homeAddress,
-#         # )
-#         #
-#         # db.session.add(new_user)
-#         # db.session.commit()
-#         # --------------------------------------------------------------#
-#
-#         # return (jsonify({"message": "New User Created Successfully !"}), 202)
-#     except Exception as e:
-#         return jsonify({"error": f"Failed to register user: {str(e)}"}), 500
-#
-# --------------------------------------------------------------#
-
-
 @crumbl_blueprint.route("/register", methods=["POST"])
 def register():
+    # PERF: for frontend, no need yet
+
+    # if request.method == "OPTIONS":
+    # return _build_cors_prelight_response()
+
     global user_id_counter, users
 
     try:
@@ -203,21 +110,18 @@ def register():
         print(
             f"Received data - email: {email}, firstName: {firstName}, lastName: {lastName}"
         )
-        print(f"Current users dict: {users}")
-        print(f"Type of users: {type(users)}")
 
         # Validate required fields
         if not all([email, homeAddress, password]):
             return jsonify({"error": "Missing required fields"}), 400
 
-        # Check if user already exists
-        print(f"Checking if {email} exists in users")
-        if email in users:
-            return jsonify({"error": "User's email already exists"}), 400
+        # Check if user already exists - modified for list structure
+        for existing_user in users.values():
+            if existing_user["email"] == email:
+                return jsonify({"error": "User's email already exists"}), 400
 
         # Generate User ID
         user_id = f"User_{user_id_counter}"
-        print(f"Generated user_id: {user_id}")
 
         # Create user data dictionary
         user_data = {
@@ -229,20 +133,29 @@ def register():
             "password": generate_password_hash(password),
         }
 
-        # Store in global users dictionary
-        print("Storing user data in users dictionary")
+        # Store in users dictionary with email as key
         users[email] = user_data
 
-        print(f"Updated users dict: {users}")
-
-        # Update user_id_counter
-        global user_id_counter
+        # Update counter
         user_id_counter += 1
 
         # Update user_id_index
         if not hasattr(crumbl_blueprint, "user_id_index"):
             crumbl_blueprint.user_id_index = {}
         crumbl_blueprint.user_id_index[user_id] = email
+
+        # NOTE: For part 2
+        #
+        # --------------------------------------------------------------#
+        # new_user = User(
+        #     email=email,
+        #     password=password,
+        #     homeAddress=homeAddress,
+        # )
+        #
+        # db.session.add(new_user)
+        # db.session.commit()
+        # --------------------------------------------------------------#
 
         return (
             jsonify(
@@ -264,18 +177,6 @@ def register():
         print("Error occurred:")
         print(traceback.format_exc())
         return jsonify({"error": f"Failed to register user: {str(e)}"}), 500
-
-
-# Add a route to check the current state of users
-@crumbl_blueprint.route("/debug/users", methods=["GET"])
-def debug_users():
-    return jsonify(
-        {
-            "users": users,
-            "type_users": str(type(users)),
-            "user_id_counter": user_id_counter,
-        }
-    )
 
 
 @crumbl_blueprint.route("/users", methods=["GET"])
@@ -446,38 +347,7 @@ def deleteCrum(cid):
 # -------------------------------------------------------------#
 
 # Mocking users and Login
-users = [
-    {
-        "id": 1,
-        "email": "john.doe@example.com",
-        "homeAddress": "123 Main St, Springfield, IL",
-        "password": generate_password_hash("jd"),
-    },
-    {
-        "id": 2,
-        "email": "jane.smith@example.com",
-        "homeAddress": "456 Oak St, Springfield, IL",
-        "password": generate_password_hash("js"),
-        "firstName": "Jane",
-        "lastName": "Smith",
-    },
-    {
-        "id": 3,
-        "email": "michael.jordan@example.com",
-        "homeAddress": "789 Maple Ave, Chicago, IL",
-        "password": generate_password_hash("mj"),
-        "firstName": "Michael",
-        "lastName": "Jordan",
-    },
-    {
-        "id": 4,
-        "email": "susan.williams@example.com",
-        "homeAddress": "321 Elm St, Aurora, IL",
-        "password": generate_password_hash("sw"),
-        "firstName": "Susan",
-        "lastName": "Williams",
-    },
-]
+
 
 # -----------------------------------------------------------------------------------------#
 # @crumbl_blueprint.route("/login", methods=["POST"])
