@@ -48,14 +48,14 @@ def home():
 
 # -------------------------------------------------------------#
 # TODO: User Authentication With Sessions and Cookies: - KYLE
-# - User Login (SHANTANU) :  Implement user login functionality where
+# - User Login :  Implement user login functionality where
 # a user can log in by providing credentials (username and
 # password). Use sessions and cookies to track and maintain login states.
-# - User Registration (KYLE): Allow new users to register by
+# - User Registration : Allow new users to register by
 # providing a username, password, and email.
-# - Session Management (KYLE): Use Flask's session management to store user
+# - Session Management : Use Flask's session management to store user
 # session data securely
-# - Logout (SHANTANU): Implement logout functionality that clears the session and
+# - Logout : Implement logout functionality that clears the session and
 # removes authentication cookies
 # -------------------------------------------------------------#
 
