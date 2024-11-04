@@ -81,6 +81,46 @@ def login_required(f):
     return decorated_function
 
 
+# NOTE: Login route
+@crumbl_blueprint.route("/login", methods=["POST"])
+def login():
+    try:
+        email = request.json.get("email")
+        password = request.json.get("password")
+
+        # Check if user exist
+        if email not in users:
+            return jsonify({"error": "Invalid email or password "}), 401
+
+        user = users[email]
+
+        # verify password
+        if not check_password_hash(user["password"], password):
+            return jsonify({"error": "Invalid email or password"}), 401
+
+        # create session
+        session["user_id"] = user["user_id"]
+        session["logged_in"] = True
+        session["last_activity"] = datetime.now().timestamp()
+
+        # Set session to expire after 24 hours
+        session.permanent = True
+
+        return (
+            jsonify(
+                {
+                    "message": "Login successfully",
+                    "user": {
+                        "email": user["email"],
+                    },
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        return jsonify({"error": f"Login failed : {str(e)}"}), 500
+
+
 # User Container
 users = {}
 # user_ID
@@ -182,46 +222,6 @@ def register():
 @crumbl_blueprint.route("/users", methods=["GET"])
 def list_users():
     return jsonify({"user": users}), 200
-
-
-# NOTE: Login route
-@crumbl_blueprint.route("/login", methods=["POST"])
-def login():
-    try:
-        email = request.json.get("email")
-        password = request.json.get("password")
-
-        # Check if user exist
-        if email not in users:
-            return jsonify({"error": "Invalid email or password "}), 401
-
-        user = users[email]
-
-        # verify password
-        if not check_password_hash(user["password"], password):
-            return jsonify({"error": "Invalid email or password"}), 401
-
-        # create session
-        session["user_id"] = user["user_id"]
-        session["logged_in"] = True
-        session["last_activity"] = datetime.now().timestamp()
-
-        # Set session to expire after 24 hours
-        session.permanent = True
-
-        return (
-            jsonify(
-                {
-                    "message": "Login successfully",
-                    "user": {
-                        "email": user["email"],
-                    },
-                }
-            ),
-            200,
-        )
-    except Exception as e:
-        return jsonify({"error": f"Login failed : {str(e)}"}), 500
 
 
 @crumbl_blueprint.route("/logout", methods=["POST"])
