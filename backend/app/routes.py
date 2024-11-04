@@ -1,6 +1,7 @@
 import jwt
 import os
 import random
+import logging
 
 from flask import Blueprint, request, jsonify, session
 from functools import wraps
@@ -12,13 +13,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 # from app import db
 
-# User Container
-users = {}
-
 # Inventories Container
 inventories = {}
-# user_ID
-user_id_counter = 1
+
 
 # inventory_item id
 inventory_id_counter = 1
@@ -28,9 +25,36 @@ inventory_id_counter = 1
 # NOTE: For Public
 
 # Crumbs Container
-crumbs_public = {}
+crumbls_public = [{
+         "name": "Chocolate Chip",
+         "description": "The classic chocolate chip cookie",
+         "quantity": 65,
+         "price": 4.99,
+         "ID": 20,
+     },
+     {
+         "name": "Confetti Milk Shake",
+         "description": "A confetti sugar cookie rolled in rainbow sprinkles and topped with cake-flavored buttercream and a dollop of whipped cream",
+         "quantity": 23,
+         "price": 4.99,
+         "ID": 46,
+     },
+     {
+         "name": "Kentucky Butter Cake",
+         "description": "A yellow butter cake cookie smothered with a melt-in-your-mouth buttery glaze.",
+         "quantity": 12,
+         "price": 4.99,
+         "ID": 26,
+     },
+     {
+         "name": "Pink Velvet Cake Cookie",
+         "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.",
+         "quantity": 7,
+         "price": 4.99,
+         "ID": 63,
+   }]
 # crumb_id
-crumb_id_public = 1
+crumbl_id_public = 1
 
 # NOTE: For Private
 
@@ -51,14 +75,14 @@ def home():
 
 # -------------------------------------------------------------#
 # TODO: User Authentication With Sessions and Cookies: - KYLE
-# - User Login (SHANTANU) :  Implement user login functionality where
+# - User Login :  Implement user login functionality where
 # a user can log in by providing credentials (username and
 # password). Use sessions and cookies to track and maintain login states.
-# - User Registration (KYLE): Allow new users to register by
+# - User Registration : Allow new users to register by
 # providing a username, password, and email.
-# - Session Management (KYLE): Use Flask's session management to store user
+# - Session Management : Use Flask's session management to store user
 # session data securely
-# - Logout (SHANTANU): Implement logout functionality that clears the session and
+# - Logout : Implement logout functionality that clears the session and
 # removes authentication cookies
 # -------------------------------------------------------------#
 
@@ -82,98 +106,6 @@ def login_required(f):
         return f(*args, **kwargs)
 
     return decorated_function
-
-
-@crumbl_blueprint.route("/register", methods=["POST"])
-def register():
-    global user_id_counter
-
-    # PERF: for frontend, no need yet
-    #
-    # if request.method == "OPTIONS":
-    #     return _build_cors_prelight_response()
-
-    try:
-        # Get User Input
-        email = request.json.get("email")
-        firstName = request.json.get("firstName")
-        lastName = request.json.get("lastName")
-        homeAddress = request.json.get("homeAddress")
-        password = request.json.get("password")
-
-        # NOTE: For Part 2
-        #
-        # --------------------------------------------------------------#
-        # checking if the user is already existing
-        # existing_user = User.query.filter_by(email=email).first()
-        # if existing_user:
-        #     return jsonify({"error": "User with this email already existed"}), 401
-        # --------------------------------------------------------------#
-
-        # Validate required fields
-        if not all([email, homeAddress, password]):
-            return jsonify({"error": "Missing required fields"}), 400
-
-        # Check if user already exists
-        if email in users:
-            return jsonify({"error": "User's email is already existed"}), 400
-
-        # generate User ID
-        user_id = f"User_{user_id_counter}"
-        user_id_counter += 1
-
-        # Secure hash password
-        password_hash = generate_password_hash(password)
-
-        users[email] = {
-            "user_id": user_id,
-            "email": email,
-            "firstName": firstName,
-            "lastName": lastName,
-            "homeAddress": homeAddress,
-            "password": password_hash,
-        }
-
-        # separate index of user_ids and email for quick look up
-        if not hasattr(crumbl_blueprint, "user_id_index"):
-            crumbl_blueprint.user_id_index = {}
-        crumbl_blueprint.user_id_index[user_id] = email
-
-        return (
-            jsonify(
-                {
-                    "message": "New user Created Successfully",
-                    "user": {
-                        "user_id": user_id,
-                        "email": email,
-                        "homeAddress": homeAddress,
-                    },
-                }
-            ),
-            201,
-        )
-
-        # NOTE: For part 2
-        #
-        # --------------------------------------------------------------#
-        # new_user = User(
-        #     email=email,
-        #     password=password,
-        #     homeAddress=homeAddress,
-        # )
-        #
-        # db.session.add(new_user)
-        # db.session.commit()
-        # --------------------------------------------------------------#
-
-        # return (jsonify({"message": "New User Created Successfully !"}), 202)
-    except Exception as e:
-        return jsonify({"error": f"Failed to register user: {str(e)}"}), 500
-
-
-@crumbl_blueprint.route("/users", methods=["GET"])
-def list_users():
-    return jsonify({"user": users}), 200
 
 
 # NOTE: Login route
@@ -214,6 +146,109 @@ def login():
         )
     except Exception as e:
         return jsonify({"error": f"Login failed : {str(e)}"}), 500
+
+
+# User Container
+users = {}
+# user_ID
+user_id_counter = 1
+
+
+@crumbl_blueprint.route("/register", methods=["POST"])
+def register():
+    # PERF: for frontend, no need yet
+
+    # if request.method == "OPTIONS":
+    # return _build_cors_prelight_response()
+
+    global user_id_counter, users
+
+    try:
+        # Debug print the request data
+        print("Request JSON:", request.json)
+
+        # Get User Input with debug prints
+        email = request.json.get("email")
+        firstName = request.json.get("firstName")
+        lastName = request.json.get("lastName")
+        homeAddress = request.json.get("homeAddress")
+        password = request.json.get("password")
+
+        print(
+            f"Received data - email: {email}, firstName: {firstName}, lastName: {lastName}"
+        )
+
+        # Validate required fields
+        if not all([email, homeAddress, password]):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Check if user already exists - modified for list structure
+        for existing_user in users.values():
+            if existing_user["email"] == email:
+                return jsonify({"error": "User's email already exists"}), 400
+
+        # Generate User ID
+        user_id = f"User_{user_id_counter}"
+
+        # Create user data dictionary
+        user_data = {
+            "user_id": user_id,
+            "email": email,
+            "firstName": firstName,
+            "lastName": lastName,
+            "homeAddress": homeAddress,
+            "password": generate_password_hash(password),
+        }
+
+        # Store in users dictionary with email as key
+        users[email] = user_data
+
+        # Update counter
+        user_id_counter += 1
+
+        # Update user_id_index
+        if not hasattr(crumbl_blueprint, "user_id_index"):
+            crumbl_blueprint.user_id_index = {}
+        crumbl_blueprint.user_id_index[user_id] = email
+
+        # NOTE: For part 2
+        #
+        # --------------------------------------------------------------#
+        # new_user = User(
+        #     email=email,
+        #     password=password,
+        #     homeAddress=homeAddress,
+        # )
+        #
+        # db.session.add(new_user)
+        # db.session.commit()
+        # --------------------------------------------------------------#
+
+        return (
+            jsonify(
+                {
+                    "message": "New user Created Successfully",
+                    "user": {
+                        "user_id": user_id,
+                        "email": email,
+                        "homeAddress": homeAddress,
+                    },
+                }
+            ),
+            201,
+        )
+
+    except Exception as e:
+        import traceback
+
+        print("Error occurred:")
+        print(traceback.format_exc())
+        return jsonify({"error": f"Failed to register user: {str(e)}"}), 500
+
+
+@crumbl_blueprint.route("/users", methods=["GET"])
+def list_users():
+    return jsonify({"user": users}), 200
 
 
 @crumbl_blueprint.route("/logout", methods=["POST"])
@@ -272,15 +307,15 @@ crumbls = [
 
 # compares and finds cookie
 def findCrumbl(cid):
-    for crum in crumbls:
+    for crum in crumbls_public:
         if crum["ID"] == cid:
             return crum
     return None
 
-
+#comment this out later
 # assigns a ranom ID number to cookie and ensures it isnt a repeat
 def newID():
-    while True:
+   while True:
         nid = random.randint(1, 100)
         if findCrumbl(nid) is None:
             return nid
@@ -289,7 +324,7 @@ def newID():
 # lists full list of cookies
 @crumbl_blueprint.route("/crumbls", methods=["GET"])
 def listCookies():
-    return jsonify(crumbls)
+    return jsonify(crumbls_public)
 
 
 # find specific cookie by ID number
@@ -304,6 +339,7 @@ def findCrum(cid):
 # creates new crumbl cookie
 @crumbl_blueprint.route("/crumbls", methods=["POST"])
 def makeCrum():
+    global crumbl_id_public
     if (
         not request.json
         or "name" not in request.json
@@ -312,15 +348,20 @@ def makeCrum():
         or "price" not in request.json
     ):
         return jsonify("error missing information"), 400
-    newCID = newID()
+    while True:
+        nID = crumbl_id_public
+        crumbl_id_public += 1
+        if findCrumbl(nID) is None:
+           break
+        
     newCrumbl = {
         "name": request.json["name"],
         "description": request.json["description"],
         "quantity": request.json["quantity"],
         "price": request.json["price"],
-        "ID": newCID,
+        "ID": nID,
     }
-    crumbls.append(newCrumbl)
+    crumbls_public.append(newCrumbl)
     return jsonify(newCrumbl), 201
 
 
@@ -342,11 +383,11 @@ def updateCrum(cid):
 # deletes crumbl cookie
 @crumbl_blueprint.route("/crumbls/<int:cid>", methods=["DELETE"])
 def deleteCrum(cid):
-    global crumbls
+    global crumbls_public
     crum = findCrum(cid)
     if crum is None:
         return jsonify("Crumble cookie could not be found"), 404
-    crumbls = [c for c in crumbls if c["ID"] != cid]
+    crumbls_public = [c for c in crumbls if c["ID"] != cid]
     return "", 204
 
 
@@ -357,7 +398,6 @@ def deleteCrum(cid):
 # - Use sessions to ensure that only authenticated users can access
 # inventory-related CRUD Operations
 # -------------------------------------------------------------#
-# ]
 @crumbl_blueprint.route("/mycrumbls", methods=["GET"])
 @login_required
 def myListCookies():
