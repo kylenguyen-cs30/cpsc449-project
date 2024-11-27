@@ -3,28 +3,25 @@ import os
 from flask import Flask
 from datetime import timedelta
 
-# from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 
-# from flask_migrate import Migrate, migrate
-
-# db = SQLAlchemy()
-# migrate = Migrate()
+db = SQLAlchemy()
 
 
 def create_app():
     app = Flask(__name__)
 
-    # TODO: MATTHEW please add your works here.  
-    app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
+    # TODO: MATTHEW please add your works here.
+    app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 
     # Session cookie security settings
-    app.config['SESSION_COOKIE_SECURE'] = True        # Only send cookie over HTTPS
-    app.config['SESSION_COOKIE_HTTPONLY'] = True      # Prevent JavaScript access to cookies
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'     # Restrict cross-site requests
+    app.config["SESSION_COOKIE_SECURE"] = True  # Only send cookie over HTTPS
+    app.config["SESSION_COOKIE_HTTPONLY"] = True  # Prevent JavaScript access to cookies
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # Restrict cross-site requests
 
     # Set a session lifetime for automatic logout of inactive users
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=30)
     # PERF: CORS no need enable yet
     CORS(
         app,
@@ -44,16 +41,12 @@ def create_app():
         ],
     )
 
-    #----------------------------------------------------------------------#
-    # NOTE: Enable Database later
-    #
-    # app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
-    #     "DATABASE_URL", "postgresql://admin:password@db/cpsc449_project"
-    # )
-    # app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    # db.init_app(app)
-    # migrate.init_app(app, db)
-    #----------------------------------------------------------------------#
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    db.init_app(app)
+
+    with app.app_context():
+        db.create_all()
 
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "my-default-secret-key")
 

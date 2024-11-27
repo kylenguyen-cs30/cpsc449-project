@@ -3,15 +3,15 @@ import os
 import random
 import logging
 
-from flask import Blueprint, request, jsonify, session
-from functools import wraps
 
-# from .models import User
+from flask import Blueprint, request, jsonify, session
 from functools import wraps
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
+from app import db
+from database_model import User
 
-# from app import db
+logger = logging.getLogger(__name__)
 
 # Inventories Container
 inventories = {}
@@ -25,41 +25,43 @@ inventory_id_counter = 1
 # NOTE: For Public
 
 # Crumbs Container
-crumbls_public = [{
-         "name": "Chocolate Chip",
-         "description": "The classic chocolate chip cookie",
-         "quantity": 65,
-         "price": 4.99,
-         "ID": 20,
-     },
-     {
-         "name": "Confetti Milk Shake",
-         "description": "A confetti sugar cookie rolled in rainbow sprinkles and topped with cake-flavored buttercream and a dollop of whipped cream",
-         "quantity": 23,
-         "price": 4.99,
-         "ID": 46,
-     },
-     {
-         "name": "Kentucky Butter Cake",
-         "description": "A yellow butter cake cookie smothered with a melt-in-your-mouth buttery glaze.",
-         "quantity": 12,
-         "price": 4.99,
-         "ID": 26,
-     },
-     {
-         "name": "Pink Velvet Cake Cookie",
-         "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.",
-         "quantity": 7,
-         "price": 4.99,
-         "ID": 63,
-   }]
+crumbls_public = [
+    {
+        "name": "Chocolate Chip",
+        "description": "The classic chocolate chip cookie",
+        "quantity": 65,
+        "price": 4.99,
+        "ID": 20,
+    },
+    {
+        "name": "Confetti Milk Shake",
+        "description": "A confetti sugar cookie rolled in rainbow sprinkles and topped with cake-flavored buttercream and a dollop of whipped cream",
+        "quantity": 23,
+        "price": 4.99,
+        "ID": 46,
+    },
+    {
+        "name": "Kentucky Butter Cake",
+        "description": "A yellow butter cake cookie smothered with a melt-in-your-mouth buttery glaze.",
+        "quantity": 12,
+        "price": 4.99,
+        "ID": 26,
+    },
+    {
+        "name": "Pink Velvet Cake Cookie",
+        "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.",
+        "quantity": 7,
+        "price": 4.99,
+        "ID": 63,
+    },
+]
 # crumb_id
 crumbl_id_public = 1
 
 # NOTE: For Private
 
 # Crumbs Container
-crumbs_private = [] # crumbs_private = {}
+crumbs_private = []  # crumbs_private = {}
 # crumb_id
 crumb_id_private = 1
 # -------------------------------------------------------------#
@@ -73,20 +75,6 @@ def home():
     return jsonify("Crumbl Backend Online!")
 
 
-# -------------------------------------------------------------#
-# TODO: User Authentication With Sessions and Cookies: - KYLE
-# - User Login :  Implement user login functionality where
-# a user can log in by providing credentials (username and
-# password). Use sessions and cookies to track and maintain login states.
-# - User Registration : Allow new users to register by
-# providing a username, password, and email.
-# - Session Management : Use Flask's session management to store user
-# session data securely
-# - Logout : Implement logout functionality that clears the session and
-# removes authentication cookies
-# -------------------------------------------------------------#
-
-
 # NOTE: Middleware for login_required
 def login_required(f):
     @wraps(f)
@@ -94,16 +82,30 @@ def login_required(f):
         if "user_id" not in session:
             return jsonify({"error": "You must be logged in to access this route"}), 403
 
-        # Check if session has expired
-        if "last_activity" in session:
-            last_activity = datetime.fromtimestamp(session["last_activity"])
-            if datetime.now() - last_activity > timedelta(hours=24):
-                session.clear()  # Fixed typo: was session.clears()
-                return jsonify({"error": "Session expired, please login again"}), 401
+        try:
+            # verify user still exists in database
+            user = User.query.get(session["user_id"])
 
-        # Update last_activity timestamp
-        session["last_activity"] = datetime.now().timestamp()
-        return f(*args, **kwargs)
+            if not user:
+                session.clear()
+                return jsonify({"error": "User not found"}), 401
+
+            # Check if session has expired
+            if "last_activity" in session:
+                last_activity = datetime.fromtimestamp(session["last_activity"])
+                if datetime.now() - last_activity > timedelta(hours=24):
+                    session.clear()  # Fixed typo: was session.clears()
+                    return (
+                        jsonify({"error": "Session expired, please login again"}),
+                        401,
+                    )
+
+            # Update last_activity timestamp
+            session["last_activity"] = datetime.now().timestamp()
+            return f(*args, **kwargs)
+
+        except Exception as e:
+            raise e
 
     return decorated_function
 
@@ -115,18 +117,18 @@ def login():
         email = request.json.get("email")
         password = request.json.get("password")
 
-        # Check if user exist
-        if email not in users:
-            return jsonify({"error": "Invalid email or password "}), 401
+        # validate input
+        if not all([email, password]):
+            return jsonify({"error": "Email and password are required"}), 400
 
-        user = users[email]
+        # query the user from database
+        user = User.query.filter_by(email=email).first()
 
-        # verify password
-        if not check_password_hash(user["password"], password):
+        if not user or not user.check_password(password):
             return jsonify({"error": "Invalid email or password"}), 401
 
         # create session
-        session["user_id"] = user["user_id"]
+        session["user_id"] = user.id
         session["logged_in"] = True
         session["last_activity"] = datetime.now().timestamp()
 
@@ -138,22 +140,32 @@ def login():
                 {
                     "message": "Login successfully",
                     "user": {
-                        "email": user["email"],
+                        "firstName": user.firstName,
+                        "lastName": user.lastName,
+                        "email": user.email,
                     },
                 }
             ),
             200,
         )
     except Exception as e:
+        import traceback
+
+        print("Error occurred:")
+        print(traceback.format_exc)
         return jsonify({"error": f"Login failed : {str(e)}"}), 500
 
 
-# User Container
-users = {}
-# user_ID
-user_id_counter = 1
+# NOTE: email validattion
+def is_valid_email(email):
+    """
+    validate email format using regex pattern
+    """
+    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+    return re.match(pattern, email) is not None
 
 
+# NOTE: Register route
 @crumbl_blueprint.route("/register", methods=["POST"])
 def register():
     # PERF: for frontend, no need yet
@@ -174,64 +186,43 @@ def register():
         homeAddress = request.json.get("homeAddress")
         password = request.json.get("password")
 
-        print(
-            f"Received data - email: {email}, firstName: {firstName}, lastName: {lastName}"
-        )
-
         # Validate required fields
         if not all([email, homeAddress, password]):
             return jsonify({"error": "Missing required fields"}), 400
 
+        # validate email format
+        if not is_valid_email(email):
+            return jsonify({"error": "All fields are required"}), 400
+
         # Check if user already exists - modified for list structure
-        for existing_user in users.values():
-            if existing_user["email"] == email:
-                return jsonify({"error": "User's email already exists"}), 400
+        if User.query.filter_by(email=email).first():
+            return jsonify({"error": "User's email already exist"}), 400
 
-        # Generate User ID
-        user_id = f"User_{user_id_counter}"
+        # Create new user instance
+        new_user = User(
+            email=email,
+            firstName=firstName,
+            lastName=lastName,
+            password=generate_password_hash(password),
+            homeAddress=homeAddress,
+        )
 
-        # Create user data dictionary
-        user_data = {
-            "user_id": user_id,
-            "email": email,
-            "firstName": firstName,
-            "lastName": lastName,
-            "homeAddress": homeAddress,
-            "password": generate_password_hash(password),
-        }
-
-        # Store in users dictionary with email as key
-        users[email] = user_data
-
-        # Update counter
-        user_id_counter += 1
-
-        # Update user_id_index
-        if not hasattr(crumbl_blueprint, "user_id_index"):
-            crumbl_blueprint.user_id_index = {}
-        crumbl_blueprint.user_id_index[user_id] = email
-
-        # NOTE: For part 2
-        #
-        # --------------------------------------------------------------#
-        # new_user = User(
-        #     email=email,
-        #     password=password,
-        #     homeAddress=homeAddress,
-        # )
-        #
-        # db.session.add(new_user)
-        # db.session.commit()
-        # --------------------------------------------------------------#
+        # add to database and commit
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": "Database error occurred"}), 500
 
         return (
             jsonify(
                 {
                     "message": "New user Created Successfully",
                     "user": {
-                        "user_id": user_id,
-                        "email": email,
-                        "homeAddress": homeAddress,
+                        "user_id": new_user.id,
+                        "email": new_user.email,
+                        "homeAddress": new_user.homeAddress,
                     },
                 }
             ),
@@ -305,6 +296,7 @@ crumbls = [
     },
 ]
 
+
 # compares and finds cookie
 def findCrumbl(cid):
     for crum in crumbls_public:
@@ -312,10 +304,11 @@ def findCrumbl(cid):
             return crum
     return None
 
-#comment this out later
+
+# comment this out later
 # assigns a ranom ID number to cookie and ensures it isnt a repeat
 def newID():
-   while True:
+    while True:
         nid = random.randint(1, 100)
         if findCrumbl(nid) is None:
             return nid
@@ -352,8 +345,8 @@ def makeCrum():
         nID = crumbl_id_public
         crumbl_id_public += 1
         if findCrumbl(nID) is None:
-           break
-        
+            break
+
     newCrumbl = {
         "name": request.json["name"],
         "description": request.json["description"],
@@ -411,7 +404,11 @@ def myListCookies():
 def findMyCrum(cid):
     user_id = session.get("user_id")
     foundC = next(
-        (crum for crum in crumbs_private if crum["ID"] == cid and crum["user_id"] == user_id),
+        (
+            crum
+            for crum in crumbs_private
+            if crum["ID"] == cid and crum["user_id"] == user_id
+        ),
         None,
     )
     if foundC is None:
@@ -432,7 +429,7 @@ def makeMyCrum():
     ):
         return jsonify({"error": "Missing information"}), 400
 
-    global crumb_id_private    
+    global crumb_id_private
     newCID = crumb_id_private
     crumb_id_private += 1
     newCrumbl = {
@@ -452,7 +449,11 @@ def makeMyCrum():
 def updateMyCrum(cid):
     user_id = session.get("user_id")
     crum = next(
-        (crum for crum in crumbs_private if crum["ID"] == cid and crum["user_id"] == user_id),
+        (
+            crum
+            for crum in crumbs_private
+            if crum["ID"] == cid and crum["user_id"] == user_id
+        ),
         None,
     )
     if crum is None:
@@ -474,12 +475,18 @@ def deleteMyCrum(cid):
     global crumbs_private
     user_id = session.get("user_id")
     crum = next(
-        (crum for crum in crumbs_private if crum["ID"] == cid and crum["user_id"] == user_id),
+        (
+            crum
+            for crum in crumbs_private
+            if crum["ID"] == cid and crum["user_id"] == user_id
+        ),
         None,
     )
     if crum is None:
         return jsonify({"error": "Crumbl Cookie not found or unauthorized"}), 404
-    crumbs_private = [c for c in crumbs_private if not (c["ID"] == cid and c["user_id"] == user_id)]
+    crumbs_private = [
+        c for c in crumbs_private if not (c["ID"] == cid and c["user_id"] == user_id)
+    ]
     return jsonify({"message": "Item deleted successfully."}), 200
 
 
@@ -489,5 +496,3 @@ def deleteMyCrum(cid):
 # - Implement proper session expiration handing to automatically
 # log out.
 # -------------------------------------------------------------#
-
-
