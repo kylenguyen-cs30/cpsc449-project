@@ -1,12 +1,15 @@
+import logging
+import time
 import os
 
 from flask import Flask
 from datetime import timedelta
-
-from flask_sqlalchemy import SQLAlchemy
+from app.database_model import db
 from flask_cors import CORS
+from sqlalchemy.exc import OperationalError
 
-db = SQLAlchemy()
+
+logger = logging.getLogger(__name__)
 
 
 def create_app():
@@ -41,16 +44,36 @@ def create_app():
         ],
     )
 
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+    # Database configuration
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("MYSQL_DATABASE_URL")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    # Initialize database
     db.init_app(app)
 
+    # Import models
+    from app.database_model import User, PublicCrum
+
     with app.app_context():
-        db.create_all()
+        max_retries = 5
+        retry_count = 0
+        while retry_count < max_retries:
+            try:
+                db.create_all()
+                print("Database tables created succesfully")
+                logging.info("Database tables created successfully")
+                break
+            except OperationalError as e:
+                retry_count += 1
+                if retry_count == max_retries:
+                    print(f"Failed to connect to database after {max_retries} attempts")
+                    raise e
+                print(f"Database connection attempt {retry_count} failed, retrying...")
+                time.sleep(5)
 
-    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "my-default-secret-key")
-
+    # register blueprints
     from app.routes import crumbl_blueprint
 
     app.register_blueprint(crumbl_blueprint)
+
     return app

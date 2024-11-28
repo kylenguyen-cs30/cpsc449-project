@@ -1,5 +1,3 @@
-import jwt
-import os
 import random
 import logging
 
@@ -8,8 +6,7 @@ from flask import Blueprint, request, jsonify, session
 from functools import wraps
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
-from app import db
-from database_model import User
+from app.database_model import User, db
 
 logger = logging.getLogger(__name__)
 

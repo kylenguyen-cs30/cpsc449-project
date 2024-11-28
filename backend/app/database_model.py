@@ -1,7 +1,7 @@
-from app import db
-
-
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+
+db = SQLAlchemy()
 
 
 class User(db.Model):
@@ -40,7 +40,7 @@ class PublicCrum(db.Model):
     name = db.Column(db.String(101), nullable=False)
     description = db.Column(db.String(101), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
-    price = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.DECIMAL(10, 2), nullable=False)
 
     def __init__(self, name, description, quantity, price) -> None:
         self.name = name
