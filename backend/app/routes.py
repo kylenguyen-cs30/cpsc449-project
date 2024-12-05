@@ -1,5 +1,6 @@
 import random
 import logging
+import re
 
 
 from flask import Blueprint, request, jsonify, session
@@ -339,17 +340,17 @@ def makeCrum():
     ):
         return jsonify("error missing information"), 400
 
-    try: 
+    try:
         quant = int(request.json["quantity"])
         if quant < 0:
-            return jsonify("Error:Quantity must be non-negative value"),400
-        
-        price = round(float(request.json["price"]),2)
-        if price < 0: 
-            return jsonify("Error:Price must be non-negative value"),400
+            return jsonify("Error:Quantity must be non-negative value"), 400
+
+        price = round(float(request.json["price"]), 2)
+        if price < 0:
+            return jsonify("Error:Price must be non-negative value"), 400
 
     except ValueError:
-            return jsonify("Error: Quantity must be integer and price must be float"),400
+        return jsonify("Error: Quantity must be integer and price must be float"), 400
 
     while True:
         nID = crumbl_id_public
@@ -376,30 +377,30 @@ def updateCrum(cid):
         jsonify("could not find cookie to update"), 404
     if not request.json:
         jsonify("please use proper json standards"), 400
-    
+
     if "name" in request.json:
         crum["name"] = request.json["name"]
-    
+
     if "description" in request.json:
         crum["description"] = request.json["description"]
-    
+
     if "quantity" in request.json:
         try:
             quant = int(request.json["quantity"])
             if quant < 0:
-                return jsonify("Error:Quantity must be non-negative value"),400
+                return jsonify("Error:Quantity must be non-negative value"), 400
             crum["quantity"] = quant
         except ValueError:
-            return jsonify("Error: Quantity must be a valid integer"),400
-   
+            return jsonify("Error: Quantity must be a valid integer"), 400
+
     if "price" in request.json:
         try:
-            price = round(float(request.json["price"]),2)
-            if price < 0: 
-                return jsonify("Error:Price must be non-negative value"),400
+            price = round(float(request.json["price"]), 2)
+            if price < 0:
+                return jsonify("Error:Price must be non-negative value"), 400
             crum["price"] = price
         except ValueError:
-            return jsonify("Error: Price must be a valid float"),400
+            return jsonify("Error: Price must be a valid float"), 400
 
     return jsonify(crum)
 
