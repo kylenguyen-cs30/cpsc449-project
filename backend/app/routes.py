@@ -7,7 +7,8 @@ from flask import Blueprint, request, jsonify, session
 from functools import wraps
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.database_model import User, db
+from app.database_model import User
+from app.mysql_connection import db
 
 logger = logging.getLogger(__name__)
 
@@ -201,7 +202,7 @@ def register():
             email=email,
             firstName=firstName,
             lastName=lastName,
-            password=generate_password_hash(password),
+            password=password,
             homeAddress=homeAddress,
         )
 
@@ -209,23 +210,24 @@ def register():
         try:
             db.session.add(new_user)
             db.session.commit()
+            logger.info(f"User registered successfully: {email}")
+            return (
+                jsonify(
+                    {
+                        "message": "New user Created Successfully",
+                        "user": {
+                            "user_id": new_user.id,
+                            "email": new_user.email,
+                            "homeAddress": new_user.homeAddress,
+                        },
+                    }
+                ),
+                201,
+            )
+
         except Exception as e:
             db.session.rollback()
             return jsonify({"error": "Database error occurred"}), 500
-
-        return (
-            jsonify(
-                {
-                    "message": "New user Created Successfully",
-                    "user": {
-                        "user_id": new_user.id,
-                        "email": new_user.email,
-                        "homeAddress": new_user.homeAddress,
-                    },
-                }
-            ),
-            201,
-        )
 
     except Exception as e:
         import traceback
