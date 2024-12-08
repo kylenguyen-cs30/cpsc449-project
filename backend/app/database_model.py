@@ -49,3 +49,37 @@ class PublicCrum(db.Model):
 
     def __repr__(self):
         return f"<Public Crum {self.name} - Qty: {self.quantity}>"
+
+# private crum
+class PrivateCrum(db.Model):
+    __tablename__ = "private_crums"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(101), nullable=False)
+    description = db.Column(db.String(101), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.DECIMAL(10, 2), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+
+    # Establish relationship to User
+    user = db.relationship("User", backref=db.backref("private_crums", lazy=True))
+
+    def __init__(self, name, description, quantity, price, user_id):
+        self.name = name
+        self.description = description
+        self.quantity = quantity
+        self.price = price
+        self.user_id = user_id
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "quantity": self.quantity,
+            "price": float(self.price),
+            "user_id": self.user_id
+        }
+
+    def __repr__(self):
+        return f"<Private Crum {self.name} (User ID: {self.user_id})>"
