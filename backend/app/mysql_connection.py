@@ -17,7 +17,7 @@ def init_mysql(app):
     # import models
 
     with app.app_context():
-        from app.database_model import User, PublicCrum
+        from app.database_model import User, PublicCrum, PrivateCrum
 
         max_retries = 5
         retry_count = 0
