@@ -46,6 +46,16 @@ class PublicCrum(db.Model):
         self.description = description
         self.quantity = quantity
         self.price = price
+        
+
+    def serialize(self): 
+        return { 
+            "name": self.name,  
+            "description": self.description,  
+            "quantity": self.quantity,  
+            "price": self.price,
+            "id":self.id
+        }
 
     def __repr__(self):
         return f"<Public Crum {self.name} - Qty: {self.quantity}>"
