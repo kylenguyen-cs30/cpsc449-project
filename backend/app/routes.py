@@ -511,11 +511,16 @@ def makeMyCrum():
         user_id=session["user_id"]
     )
 
-    # Add it to the database
-    db.session.add(new_crum)
-    db.session.commit()
+    try:
+        db.session.add(new_crum)
+        db.session.commit()
+    except Exception as e:
+        # Rollback if any error occurs during the commit
+        db.session.rollback()
+        # Log the error for debugging
+        logger.error(f"Database commit failed while creating crumb: {str(e)}")
+        return jsonify({"error": "Failed to create crumb due to a database error"}), 500
 
-    # Return the newly created item with a 201 status code
     return jsonify(new_crum.serialize()), 201
 
 
@@ -572,8 +577,16 @@ def updateMyCrum(cid):
     if not updated:
         return jsonify({"error": "No valid fields to update"}), 400
 
-    # Commit changes to the database
-    db.session.commit()
+    try:
+        # Commit changes to the database
+        db.session.commit()
+    except Exception as e:
+        # Rollback if any error occurs during the commit
+        db.session.rollback()
+        # Log the error for debugging
+        logger.error(f"Database commit failed while updating crumb: {str(e)}")
+        return jsonify({"error": "Failed to delete crumb due to a database error"}), 500    
+    
     return jsonify(crum.serialize()), 200
 
 
@@ -587,10 +600,17 @@ def deleteMyCrum(cid):
     if crum is None:
         return jsonify({"error": "Crumbl Cookie not found or unauthorized"}), 404
 
-    # Delete the crumb from the database
-    db.session.delete(crum)
-    db.session.commit()
-
+    try:
+        # Delete the crumb from the database
+        db.session.delete(crum)
+        db.session.commit()
+    except Exception as e:
+        # Rollback if any error occurs during the commit
+        db.session.rollback()
+        # Log the error for debugging
+        logger.error(f"Database commit failed while deleting crumb: {str(e)}")
+        return jsonify({"error": "Failed to delete crumb due to a database error"}), 500
+    
     # Return a success message
     return jsonify({"message": "Item deleted successfully."}), 200
 
