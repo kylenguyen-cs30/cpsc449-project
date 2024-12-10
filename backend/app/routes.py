@@ -23,39 +23,6 @@ inventory_id_counter = 1
 # -------------------------------------------------------------#
 # NOTE: For Public
 
-# Crumbs Container -- do i delete this?
-crumbls_public = [
-    {
-        "name": "Chocolate Chip",
-        "description": "The classic chocolate chip cookie",
-        "quantity": 65,
-        "price": 4.99,
-        "ID": 20,
-    },
-    {
-        "name": "Confetti Milk Shake",
-        "description": "A confetti sugar cookie rolled in rainbow sprinkles and topped with cake-flavored buttercream and a dollop of whipped cream",
-        "quantity": 23,
-        "price": 4.99,
-        "ID": 46,
-    },
-    {
-        "name": "Kentucky Butter Cake",
-        "description": "A yellow butter cake cookie smothered with a melt-in-your-mouth buttery glaze.",
-        "quantity": 12,
-        "price": 4.99,
-        "ID": 26,
-    },
-    {
-        "name": "Pink Velvet Cake Cookie",
-        "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.",
-        "quantity": 7,
-        "price": 4.99,
-        "ID": 63,
-    },
-]
-# crumb_id
-crumbl_id_public = 1
 
 # NOTE: For Private
 
@@ -263,63 +230,12 @@ def logout():
 # - Delete Inventory Item: Enable deletion of an inventory item by ID
 # -------------------------------------------------------------#
 
-# can i delete this?
-crumbls = [
-    {
-        "name": "Chocolate Chip",
-        "description": "The classic chocolate chip cookie",
-        "quantity": 65,
-        "price": 4.99,
-        "ID": 20,
-    },
-    {
-        "name": "Confetti Milk Shake",
-        "description": "A confetti sugar cookie rolled in rainbow sprinkles and topped with cake-flavored buttercream and a dollop of whipped cream",
-        "quantity": 23,
-        "price": 4.99,
-        "ID": 46,
-    },
-    {
-        "name": "Kentucky Butter Cake",
-        "description": "A yellow butter cake cookie smothered with a melt-in-your-mouth buttery glaze.",
-        "quantity": 12,
-        "price": 4.99,
-        "ID": 26,
-    },
-    {
-        "name": "Pink Velvet Cake Cookie",
-        "description": "A velvety cake batter cookie topped with a layer of vanilla cream cheese frosting and pink velvet cookie crumbs.",
-        "quantity": 7,
-        "price": 4.99,
-        "ID": 63,
-    },
-]
-
-
-# compares and finds cookie
-def findCrumbl(cid):
-    for crum in crumbls_public:
-        if crum["ID"] == cid:
-            return crum
-    return None
-
-
-# comment this out later
-# assigns a ranom ID number to cookie and ensures it isnt a repeat
-def newID():
-    while True:
-        nid = random.randint(1, 100)
-        if findCrumbl(nid) is None:
-            return nid
-
 
 # lists full list of cookies
 @crumbl_blueprint.route("/crumbls", methods=["GET"])
 def listCookies():
     crumsPublic = PublicCrum.query.all()
     return jsonify([crum.serialize() for crum in crumsPublic])
-    # return jsonify(crumbls_public)
-
 
 # find specific cookie by ID number
 @crumbl_blueprint.route("/crumbls/<int:cid>", methods=["GET"])
@@ -328,12 +244,6 @@ def findCrum(cid):
     if crum is None:
         return jsonify("error: Crumbl Cookie not found"), 404
     return jsonify(crum.serialize())
-    # --------------------------------------
-    # foundC = findCrumbl(cid)
-    # if foundC is None:
-    #    return jsonify("error: Crumbl Cookie not found"), 404
-    # return jsonify(foundC)
-
 
 # creates new crumbl cookie
 @crumbl_blueprint.route("/crumbls", methods=["POST"])
@@ -360,88 +270,44 @@ def makeCrum():
     except ValueError:
         return jsonify("Error: Quantity must be integer and price must be float"), 400
 
-    while True:
-        nID = crumbl_id_public
-        crumbl_id_public += 1
-        match = PublicCrum.query.get(nID)
-        if match is None:
-            break
 
-    newCrumbl = PublicCrum(
-        name=request.json["name"],
-        description=request.json["description"],
-        quantity=quant,
-        price=priced,
-        ID=nID,
     )
     db.session.add(newCrumbl)
     db.session.commit()
 
     return jsonify(newCrumbl.serialize()), 201
 
-    # crumbls_public.append(newCrumbl)
-    # return jsonify(newCrumbl), 201
 
 
 # updates existing cookie
 @crumbl_blueprint.route("/crumbls/<int:cid>", methods=["PUT"])
 def updateCrum(cid):
-    # crum = findCrumbl(cid)
     crum = PublicCrum.query.get(cid)
     if crum is None:
         jsonify("could not find cookie to update"), 404
     if not request.json:
         jsonify("please use proper json standards"), 400
-
-    if "name" in request.json:
-        name = request.json.get("name", crum.name)
-
-    if "description" in request.json:
-        description = request.json.get("description", crum.description)
-
-    if "quantity" in request.json:
         try:
             quant = int(request.json.get("quantity", crum.quantity))
             if quant < 0:
                 return jsonify("Error:Quantity must be non-negative value"), 400
         except ValueError:
-            return jsonify("Error: Quantity must be a valid integer"), 400
-
-    if "price" in request.json:
-        try:
-            price = round(float(request.json.get("price", crum.price), 2))
-            if price < 0:
-                return jsonify("Error:Price must be non-negative value"), 400
-        except ValueError:
-            return jsonify("Error: Price must be a valid float"), 400
-
-    crum.name = name
-    crum.description = description
     crum.quantity = quant
     crum.price = price
 
     db.session.commit()
     return jsonify(crum.serialize())
 
-    # return jsonify(crum)
-
 
 # deletes crumbl cookie
 @crumbl_blueprint.route("/crumbls/<int:cid>", methods=["DELETE"])
 def deleteCrum(cid):
-    # global crumbls_public
-    # crum = findCrum(cid)
     crum = PublicCrum.query.get(cid)
     if crum is None:
         return jsonify("Crumble cookie could not be found"), 404
 
     db.session.delete(crum)
     db.session.commit()
-
-    return jsonify({"success": "crumbl cookie deleted"}), 200
-    # crumbls_public = [c for c in crumbls if c["ID"] != cid]
-    # return "", 204
-
 
 # -------------------------------------------------------------#
 # TODO: USER-Specific Inventory Management: - PHONG
@@ -453,63 +319,69 @@ def deleteCrum(cid):
 @crumbl_blueprint.route("/mycrumbls", methods=["GET"])
 @login_required
 def myListCookies():
-    user_id = session.get("user_id")
-    user_crumbls = PrivateCrum.query.filter_by(user_id=user_id).all()
+    # Fetch all private crumbs belonging to the currently logged-in user
+    user_crumbls = PrivateCrum.query.filter_by(user_id=session["user_id"]).all()
+
+    # If the user has no items, return a friendly message instead of an error
+    if not user_crumbls:
+        return jsonify({"message": "You have no items in your inventory."}), 200
+
+    # Return the list of user's items, serialized to JSON
     return jsonify([crum.serialize() for crum in user_crumbls]), 200
 
 
 @crumbl_blueprint.route("/mycrumbls/<int:cid>", methods=["GET"])
 @login_required
 def findMyCrum(cid):
-    user_id = session.get("user_id")
-    crum = PrivateCrum.query.filter_by(id=cid, user_id=user_id).first()
+    # Query a specific crumb by ID that belongs to the logged-in user
+    crum = PrivateCrum.query.filter_by(id=cid, user_id=session["user_id"]).first()
+
+    # If not found, return a 404 error
     if crum is None:
         return jsonify({"error": "Crumbl Cookie not found"}), 404
+
+    # If found, return the crumb details
     return jsonify(crum.serialize()), 200
 
 
 @crumbl_blueprint.route("/mycrumbls", methods=["POST"])
 @login_required
 def makeMyCrum():
-    user_id = session.get("user_id")
+    # Check if the request includes a JSON body
+    if not request.json:
+        return jsonify({"error": "Missing request body"}), 400
 
-    if (
-        not request.json
-        or "name" not in request.json
-        or "description" not in request.json
-        or "quantity" not in request.json
-        or "price" not in request.json
-    ):
-        return jsonify({"error": "Missing information"}), 400
+    # Ensure all required fields are present and not empty
+    required_fields = ["name", "description", "quantity", "price"]
+    for field in required_fields:
+        if field not in request.json or request.json[field] == "":
+            return jsonify({"error": f"Missing or empty required field: {field}"}), 400
 
-    # Validate and parse fields
-    name = request.json["name"]
-    description = request.json["description"]
+    # Validate quantity is an integer and non-negative
+    if not isinstance(request.json["quantity"], int):
+        return jsonify({"error": "Quantity must be an integer"}), 400
+    if request.json["quantity"] < 0:
+        return jsonify({"error": "Quantity must be non-negative"}), 400
 
-    try:
-        quantity = int(request.json["quantity"])
-        if quantity < 0:
-            return jsonify({"error": "Quantity must be non-negative"}), 400
-    except ValueError:
-        return jsonify({"error": "Quantity must be a valid integer"}), 400
+    # Validate price is a number and non-negative
+    if not isinstance(request.json["price"], (int, float)):
+        return jsonify({"error": "Price must be a number"}), 400
+    if request.json["price"] < 0:
+        return jsonify({"error": "Price must be non-negative"}), 400
 
-    try:
-        price = round(float(request.json["price"]), 2)
-        if price < 0:
-            return jsonify({"error": "Price must be non-negative"}), 400
-    except ValueError:
-        return jsonify({"error": "Price must be a valid float"}), 400
-
+    # Create a new private crumb object associated with the current user
     new_crum = PrivateCrum(
-        name=name,
-        description=description,
-        quantity=quantity,
-        price=price,
-        user_id=user_id,
     )
 
-    db.session.add(new_crum)
-    db.session.commit()
+    try:
+        db.session.add(new_crum)
+        db.session.commit()
+    except Exception as e:
+        # Rollback if any error occurs during the commit
+        db.session.rollback()
+        # Log the error for debugging
+        logger.error(f"Database commit failed while creating crumb: {str(e)}")
+        return jsonify({"error": "Failed to create crumb due to a database error"}), 500
 
     return jsonify(new_crum.serialize()), 201
 
@@ -517,52 +389,89 @@ def makeMyCrum():
 @crumbl_blueprint.route("/mycrumbls/<int:cid>", methods=["PUT"])
 @login_required
 def updateMyCrum(cid):
-    user_id = session.get("user_id")
-    crum = PrivateCrum.query.filter_by(id=cid, user_id=user_id).first()
+    # Query the crumb by ID for the current user
+    crum = PrivateCrum.query.filter_by(id=cid, user_id=session["user_id"]).first()
 
+    # If crumb doesn't exist or doesn't belong to the user, return 404
     if crum is None:
         return jsonify({"error": "Crumbl Cookie not found or unauthorized"}), 404
+
+    # Check if the request contains JSON
     if not request.json:
         return jsonify({"error": "Invalid JSON format"}), 400
 
-    # Update fields if provided
+    # Keep track of whether at least one field gets updated
+    updated = False
+
+    # Validate and update 'name' if provided
     if "name" in request.json:
+        if not isinstance(request.json["name"], str) or request.json["name"].strip() == "":
+            return jsonify({"error": "Name must be a non-empty string"}), 400
         crum.name = request.json["name"]
+        updated = True
+
+    # Validate and update 'description' if provided
     if "description" in request.json:
+        if not isinstance(request.json["description"], str) or request.json["description"].strip() == "":
+            return jsonify({"error": "Description must be a non-empty string"}), 400
         crum.description = request.json["description"]
+        updated = True
 
+    # Validate and update 'quantity' if provided
     if "quantity" in request.json:
-        try:
-            quant = int(request.json["quantity"])
-            if quant < 0:
-                return jsonify({"error": "Quantity must be non-negative"}), 400
-            crum.quantity = quant
-        except ValueError:
-            return jsonify({"error": "Quantity must be a valid integer"}), 400
+        if not isinstance(request.json["quantity"], int):
+            return jsonify({"error": "Quantity must be an integer"}), 400
+        if request.json["quantity"] < 0:
+            return jsonify({"error": "Quantity must be non-negative"}), 400
+        crum.quantity = request.json["quantity"]
+        updated = True
 
+    # Validate and update 'price' if provided
     if "price" in request.json:
-        try:
-            price = round(float(request.json["price"]), 2)
-            if price < 0:
-                return jsonify({"error": "Price must be non-negative"}), 400
-            crum.price = price
-        except ValueError:
-            return jsonify({"error": "Price must be a valid float"}), 400
+        if not isinstance(request.json["price"], (int, float)):
+            return jsonify({"error": "Price must be a number"}), 400
+        if request.json["price"] < 0:
+            return jsonify({"error": "Price must be non-negative"}), 400
+        crum.price = round(float(request.json["price"]), 2)
+        updated = True
 
-    db.session.commit()
+    # If no fields were updated, return an error
+    if not updated:
+        return jsonify({"error": "No valid fields to update"}), 400
+
+    try:
+        # Commit changes to the database
+        db.session.commit()
+    except Exception as e:
+        # Rollback if any error occurs during the commit
+        db.session.rollback()
+        # Log the error for debugging
+        logger.error(f"Database commit failed while updating crumb: {str(e)}")
+        return jsonify({"error": "Failed to delete crumb due to a database error"}), 500    
+    
     return jsonify(crum.serialize()), 200
 
 
 @crumbl_blueprint.route("/mycrumbls/<int:cid>", methods=["DELETE"])
 @login_required
 def deleteMyCrum(cid):
-    user_id = session.get("user_id")
-    crum = PrivateCrum.query.filter_by(id=cid, user_id=user_id).first()
+    # Query the crumb by ID for the current user
+    crum = PrivateCrum.query.filter_by(id=cid, user_id=session["user_id"]).first()
 
+    # If crumb not found or doesn't belong to user, return 404
     if crum is None:
         return jsonify({"error": "Crumbl Cookie not found or unauthorized"}), 404
 
-    db.session.delete(crum)
-    db.session.commit()
-
+    try:
+        # Delete the crumb from the database
+        db.session.delete(crum)
+        db.session.commit()
+    except Exception as e:
+        # Rollback if any error occurs during the commit
+        db.session.rollback()
+        # Log the error for debugging
+        logger.error(f"Database commit failed while deleting crumb: {str(e)}")
+        return jsonify({"error": "Failed to delete crumb due to a database error"}), 500
+    
+    # Return a success message
     return jsonify({"message": "Item deleted successfully."}), 200
