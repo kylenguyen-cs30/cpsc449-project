@@ -82,6 +82,7 @@ def get_customer_orders():
         }
 
         # Get orders and convert ObjectId to string
+        # Getting the order base on firstName and lastName of the user
         orders = list(mongo.db.orders.find(query).sort("created_at", -1))
         for order in orders:
             order["_id"] = str(order["_id"])
@@ -114,7 +115,7 @@ def update_order_status(order_id):
         # Update order status
         result = mongo.db.orders.update_one(
             {"_id": ObjectId(order_id)},
-            {"$set": {"status": data["status"], "updated_at": datetime.utcnow()}},
+            {"$set": {"status": data["status"], "updated_at": datetime.now()}},
         )
 
         if result.modified_count == 0:

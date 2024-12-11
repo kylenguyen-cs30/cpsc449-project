@@ -12,24 +12,6 @@ from app.mysql_connection import db
 
 logger = logging.getLogger(__name__)
 
-# Inventories Container
-inventories = {}
-
-
-# inventory_item id
-inventory_id_counter = 1
-
-
-# -------------------------------------------------------------#
-# NOTE: For Public
-
-
-# NOTE: For Private
-
-# crumb_id
-crumb_id_private = 1
-# -------------------------------------------------------------#
-
 
 crumbl_blueprint = Blueprint("crumbl_blueprint", __name__)
 
@@ -137,12 +119,7 @@ def register():
     # if request.method == "OPTIONS":
     # return _build_cors_prelight_response()
 
-    global user_id_counter, users
-
     try:
-        # Debug print the request data
-        print("Request JSON:", request.json)
-
         # Get User Input with debug prints
         email = request.json.get("email")
         firstName = request.json.get("firstName")
@@ -237,6 +214,7 @@ def listCookies():
     crumsPublic = PublicCrum.query.all()
     return jsonify([crum.serialize() for crum in crumsPublic])
 
+
 # find specific cookie by ID number
 @crumbl_blueprint.route("/crumbls/<int:cid>", methods=["GET"])
 def findCrum(cid):
@@ -244,6 +222,7 @@ def findCrum(cid):
     if crum is None:
         return jsonify("error: Crumbl Cookie not found"), 404
     return jsonify(crum.serialize())
+
 
 # creates new crumbl cookie
 @crumbl_blueprint.route("/crumbls", methods=["POST"])
@@ -270,13 +249,17 @@ def makeCrum():
     except ValueError:
         return jsonify("Error: Quantity must be integer and price must be float"), 400
 
-
+    newCrumbl = PublicCrum(
+        name=request.json["name"],
+        description=request.json["description"],
+        quantity=quant,
+        price=priced,
+        # id = nID
     )
     db.session.add(newCrumbl)
     db.session.commit()
 
     return jsonify(newCrumbl.serialize()), 201
-
 
 
 # updates existing cookie
@@ -287,11 +270,24 @@ def updateCrum(cid):
         jsonify("could not find cookie to update"), 404
     if not request.json:
         jsonify("please use proper json standards"), 400
+
+    if "quantity" in request.json:
         try:
             quant = int(request.json.get("quantity", crum.quantity))
             if quant < 0:
                 return jsonify("Error:Quantity must be non-negative value"), 400
         except ValueError:
+            return jsonify("Error: Quantity must be a valid integer"), 400
+
+    if "price" in request.json:
+        try:
+            price = round(float(request.json.get("price", crum.price)), 2)
+            if price < 0:
+                return jsonify("Error:Price must be non-negative value"), 400
+        except ValueError:
+            return jsonify("Error: Price must be a valid float"), 400
+    crum.name = request.json.get("name", crum.name)
+    crum.description = request.json.get("description", crum.description)
     crum.quantity = quant
     crum.price = price
 
@@ -308,6 +304,8 @@ def deleteCrum(cid):
 
     db.session.delete(crum)
     db.session.commit()
+    return jsonify({"success": "crumbl cookie deleted"}), 200
+
 
 # -------------------------------------------------------------#
 # TODO: USER-Specific Inventory Management: - PHONG
@@ -370,8 +368,7 @@ def makeMyCrum():
         return jsonify({"error": "Price must be non-negative"}), 400
 
     # Create a new private crumb object associated with the current user
-    new_crum = PrivateCrum(
-    )
+    new_crum = PrivateCrum()
 
     try:
         db.session.add(new_crum)
@@ -405,14 +402,20 @@ def updateMyCrum(cid):
 
     # Validate and update 'name' if provided
     if "name" in request.json:
-        if not isinstance(request.json["name"], str) or request.json["name"].strip() == "":
+        if (
+            not isinstance(request.json["name"], str)
+            or request.json["name"].strip() == ""
+        ):
             return jsonify({"error": "Name must be a non-empty string"}), 400
         crum.name = request.json["name"]
         updated = True
 
     # Validate and update 'description' if provided
     if "description" in request.json:
-        if not isinstance(request.json["description"], str) or request.json["description"].strip() == "":
+        if (
+            not isinstance(request.json["description"], str)
+            or request.json["description"].strip() == ""
+        ):
             return jsonify({"error": "Description must be a non-empty string"}), 400
         crum.description = request.json["description"]
         updated = True
@@ -447,8 +450,8 @@ def updateMyCrum(cid):
         db.session.rollback()
         # Log the error for debugging
         logger.error(f"Database commit failed while updating crumb: {str(e)}")
-        return jsonify({"error": "Failed to delete crumb due to a database error"}), 500    
-    
+        return jsonify({"error": "Failed to delete crumb due to a database error"}), 500
+
     return jsonify(crum.serialize()), 200
 
 
@@ -472,6 +475,6 @@ def deleteMyCrum(cid):
         # Log the error for debugging
         logger.error(f"Database commit failed while deleting crumb: {str(e)}")
         return jsonify({"error": "Failed to delete crumb due to a database error"}), 500
-    
+
     # Return a success message
     return jsonify({"message": "Item deleted successfully."}), 200
