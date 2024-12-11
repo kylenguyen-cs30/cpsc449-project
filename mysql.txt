@@ -1,0 +1,147 @@
+
+# Datavase Configuration
+MYSQL_ROOT_PASSWORD=somerootpassword123
+MYSQL_DATABASE=crumbl_db
+MYSQL_USER=kyle
+MYSQL_PASSWORD=somepassword123
+
+# backend configuration
+MYSQL_DATABASE_URL=mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@project_db:3306/${MYSQL_DATABASE}
+SECRET_KEY=nana2923
+
+MONGO_ROOT_USERNAME=kyle
+MONGO_ROOT_PASSWORD=somepassword123
+MONGO_DATABASE=crumbl_mongo_database
+MONGODB_URL=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DATABASE}?authSource=admin
+
+
+docker compose up --build -d
+
+docker compose down --volumes
+
+/register -> post
+{
+  "email": "sha@mtk.com",
+  "firstName": "sha",
+  "lastName": "mtk",
+  "homeAddress": "600 Drive",
+  "password": "mypassword123"
+}
+
+/login -> post
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+
+==
+/crumbls -> post
+
+{
+    "name": "private cookie",
+    "description": "its a private cookie",
+    "quantity": "9",
+    "price": "10"
+}
+
+===public
+/crumbls/1 -> get
+===
+/crumbls/1 -> put
+===
+/crumbls/1 -> delete
+
+=======private
+/mycrumbls/1 -> get
+===
+/mycrumbls/1 -> put
+===
+/mycrumbls/1 -> delete
+
+use crumbl_db;
+show tables;
+select * from user;
+select * from public_crums;
+select * from private_crums;
+
+INSERT INTO user (email, homeAddress, password_hash, firstName, lastName) VALUES ('user@example.com', '123 Main St', 'hashed_password', 'John', 'Doe');
+
+update public_crums set name = 'Cookie123' where id = 2;
+
+delete from public_crums where id = 2;
+
+SELECT * FROM public_crums ORDER BY price DESC LIMIT 1;
+
+INSERT INTO public_crums (name, description, quantity, price) VALUES ('Widget', 'A useful widget', 50, 19.99);
+
+UPDATE public_crums SET quantity = 75 WHERE name = 'Widget';
+
+DELETE FROM public_crums WHERE id = 1;
+
+
+===============================================================>
+
+/order -> post
+
+{
+"firstName":"John",
+"lastName":"Doe",
+"homeAddress": "123 Main St, City, State 12345",
+"items":
+    [
+    {"price": 4.99,"quantity": 2},
+    {"price": 3.99,"quantity": 1}
+    ]
+}
+
+
+
+/customer -> get
+
+/order_id/status -> PUT
+
+/order_id -> delete
+
+
+==>
+Mongo DB Query
+db.orders.insertOne({
+    "firstName": "John",
+    "lastName": "Doe",
+    "homeAddress": "123 Main St",
+    "items": [
+        {"name": "Cookie", "price": 2.5, "quantity": 4}
+    ],
+    "total": 10.0,
+    "status": "pending",
+    "created_at": new Date(),
+    "updated_at": new Date()
+});
+
+db.orders.find({
+    "firstName": "John",
+    "lastName": "Doe",
+    "homeAddress": "123 Main St"
+}).sort({"created_at": -1});
+
+db.orders.updateOne(
+    {"_id": ObjectId("64fa9d2c9f1461b2f29f3c5a")},
+    {"$set": {"status": "completed", "updated_at": new Date()}}
+);
+
+db.orders.deleteOne({"_id": ObjectId("64fa9d2c9f1461b2f29f3c5a")});
+
+db.orders.getIndexes();
+
+db.orders.createIndex({ firstName: "text", lastName: "text", homeAddress: "text" });
+
+db.orders.createIndex({ firstName: "text" });
+
+Ascending Order (Oldest First):
+db.orders.find().sort({ created_at: 1 });
+
+Descending Order (Newest First):
+db.orders.find().sort({ created_at: -1 });
+
+db.orders.find({ total: { $gte: 50, $lte: 200 } });

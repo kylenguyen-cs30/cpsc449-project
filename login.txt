@@ -1,0 +1,4 @@
+docker-compose exec project_db mysql -u kyle -psomepassword123 crumbl_db
+
+docker-compose exec mongodb mongosh "mongodb://kyle:somepassword123@localhost:27017/crumbl_mongo_database?authSource=admin"
+

@@ -1,0 +1,66 @@
+# Register
+http POST http://localhost:5000/register \
+    email="user@example.com" \
+    firstName="John" \
+    lastName="Doe" \
+    homeAddress="123 Main St" \
+    password="secretpass123"
+
+# Login
+http POST http://localhost:5000/login \
+    email="user@example.com" \
+    password="secretpass123"
+
+# Logout (requires authentication)
+http POST http://localhost:5000/logout
+
+# List Users
+http GET http://localhost:5000/users
+
+
+# List all cookies
+http GET http://localhost:5000/crumbls
+
+# Get specific cookie
+http GET http://localhost:5000/crumbls/1
+
+# Create new cookie
+http POST http://localhost:5000/crumbls \
+    name="Chocolate Chip" \
+    description="Classic chocolate chip cookie" \
+    quantity:=12 \
+    price:=4.99
+
+# Update cookie
+http PUT http://localhost:5000/crumbls/1 \
+    name="Double Chocolate Chip" \
+    description="Extra chocolatey" \
+    quantity:=15 \
+    price:=5.99
+
+# Delete cookie
+http DELETE http://localhost:5000/crumbls/1
+
+
+# List my cookies
+http GET http://localhost:5000/mycrumbls
+
+# Get my specific cookie
+http GET http://localhost:5000/mycrumbls/1
+
+# Create my cookie
+http POST http://localhost:5000/mycrumbls \
+    name="Secret Recipe Cookie" \
+    description="My special recipe" \
+    quantity:=10 \
+    price:=6.99
+
+# Update my cookie
+http PUT http://localhost:5000/mycrumbls/1 \
+    name="Updated Recipe Cookie" \
+    description="My improved recipe" \
+    quantity:=12 \
+    price:=7.99
+
+# Delete my cookie
+http DELETE http://localhost:5000/mycrumbls/1

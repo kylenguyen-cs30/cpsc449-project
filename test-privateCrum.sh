@@ -1,54 +1,64 @@
-#!/bin/bash
+# 1. Create a new order (this worked successfully)
+http POST localhost:5001/order \
+  firstName="John" \
+  lastName="Doe" \
+  homeAddress="123 Main St, City, Country" \
+  items:='[
+        {
+            "name": "Chocolate Chip Cookie",
+            "price": 4.99,
+            "quantity": 2
+        },
+        {
+            "name": "Milk Bar Cookie",
+            "price": 5.99,
+            "quantity": 1
+        }
+    ]'
 
-BASE_URL="http://localhost:5001"
+# 2. Get customer orders (this worked successfully)
+http GET "localhost:5001/order/customer?firstName=John&lastName=Doe&homeAddress=123 Main St, City, Country"
 
-echo "=== First, login as John ==="
-http --session=John POST "${BASE_URL}/login" \
-  email="john@example.com" \
-  password="password123"
+# 3. Update order status (using actual order_id from your output)
+http PUT localhost:5001/order/675908f13d4c2da6bfd044bd/status \
+  status="processing"
 
-echo "\n=== Test 1: List My Crumbls (initially empty) ==="
-http --session=John GET "${BASE_URL}/mycrumbls"
+# 4. Delete an order (using actual order_id from your output)
+http DELETE localhost:5001/order/675908f13d4c2da6bfd044bd
 
-echo "\n=== Test 2: Create New Crumbls ==="
-# Create first crumbl
-echo "\nCreating Chocolate Chip Cookie..."
-http --session=John POST "${BASE_URL}/mycrumbls" \
-  name="Chocolate Chip Cookie" \
-  description="Classic chocolate chip cookie with semi-sweet chocolate chips" \
-  quantity:=12 \
-  price:=3.99
+# Test cases for error handling (these worked as expected)
 
-# Create second crumbl
-echo "\nCreating Sugar Cookie..."
-http --session=John POST "${BASE_URL}/mycrumbls" \
-  name="Sugar Cookie" \
-  description="Traditional sugar cookie with sprinkles" \
-  quantity:=24 \
-  price:=2.99
+# 5. Test invalid order creation (missing required field)
+http POST localhost:5001/order \
+  firstName="John" \
+  lastName="Doe" \
+  items:='[{"name": "Cookie", "price": 4.99, "quantity": 1}]'
 
-echo "\n=== Test 3: List My Crumbls (should show new items) ==="
-http --session=John GET "${BASE_URL}/mycrumbls"
+# 6. Test invalid status update
+http PUT localhost:5001/order/675908f13d4c2da6bfd044bd/status \
+  status="invalid_status"
 
-echo "\n=== Test 4: Get Specific Crumbl (ID 1) ==="
-http --session=John GET "${BASE_URL}/mycrumbls/1"
+# 7. Test invalid customer query
+http GET "localhost:5001/order/customer?firstName=John"
 
-echo "\n=== Test 5: Update Crumbl (ID 1) ==="
-http --session=John PUT "${BASE_URL}/mycrumbls/1" \
-  name="Premium Chocolate Chip Cookie" \
-  price:=4.99 \
-  quantity:=10
+# Complete test sequence
+echo "Running complete test sequence..."
+echo "1. Creating new order..."
+ORDER_RESPONSE=$(http POST localhost:5001/order \
+  firstName="John" \
+  lastName="Doe" \
+  homeAddress="123 Main St, City, Country" \
+  items:='[{"name": "Test Cookie", "price": 4.99, "quantity": 1}]')
 
-echo "\n=== Test 6: Verify Update ==="
-http --session=John GET "${BASE_URL}/mycrumbls/1"
+# Extract order_id from response
+ORDER_ID=$(echo $ORDER_RESPONSE | jq -r '.order_id')
 
-echo "\n=== Test 7: Delete Crumbl (ID 2) ==="
-http --session=John DELETE "${BASE_URL}/mycrumbls/2"
+echo "Created order with ID: $ORDER_ID"
+echo "2. Getting customer orders..."
+http GET "localhost:5001/order/customer?firstName=John&lastName=Doe&homeAddress=123 Main St, City, Country"
 
-echo "\n=== Test 8: Final List (should show only remaining items) ==="
-http --session=John GET "${BASE_URL}/mycrumbls"
+echo "3. Updating order status..."
+http PUT localhost:5001/order/$ORDER_ID/status status="processing"
 
-echo "\n=== Test 9: Logout ==="
-http --session=John POST "${BASE_URL}/logout"
-
-echo "\nTest completed!"
+echo "4. Deleting order..."
+http DELETE localhost:5001/order/$ORDER_ID

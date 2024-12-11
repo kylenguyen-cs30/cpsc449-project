@@ -1,0 +1,18 @@
+http POST http://localhost:5001/order \
+    firstName="John" \
+    lastName="Doe" \
+    homeAddress="123 Main St" \
+    items:='[
+        {"name": "Chocolate Chip", "price": 4.50, "quantity": 2},
+        {"name": "Sugar Cookie", "price": 4.00, "quantity": 1}
+    ]'
+
+
+    http GET 'http://localhost:5001/order/customer?firstName=John&lastName=Doe&homeAddress=123%20Main%20St'
+
+
+    http PUT http://localhost:5001/order/65a7b1234c678d9e0f123456/status \
+    status="processing"
+
+
+    http DELETE http://localhost:5001/order/65a7b1234c678d9e0f123456

@@ -1,0 +1,44 @@
+from bson import ObjectId
+from datetime import datetime
+
+# 1. Create Index on Order Fields for Customer Information (Compound Index)
+mongo.db.orders.create_index([('firstName', 1), ('lastName', 1), ('homeAddress', 1)])
+
+# 2. Create Schema Validation for Orders Collection
+mongo.db.create_collection(
+    'orders',
+    validator={
+        '$jsonSchema': {
+            'bsonType': 'object',
+            'required': ['firstName', 'lastName', 'homeAddress', 'items', 'total'],
+            'properties': {
+                'firstName': {'bsonType': 'string', 'minLength': 1},
+                'lastName': {'bsonType': 'string', 'minLength': 1},
+                'homeAddress': {'bsonType': 'string', 'minLength': 1},
+                'items': {'bsonType': 'array'},
+                'total': {'bsonType': 'double', 'minimum': 0},
+            },
+        }
+    }
+)
+
+# 3. Insert Order (Automatically handled with Flask API code)
+order = {
+    "firstName": data["firstName"],
+    "lastName": data["lastName"],
+    "homeAddress": data["homeAddress"],
+    "items": data["items"],
+    "total": total,
+    "status": "pending",
+    "created_at": datetime.now(),
+    "updated_at": datetime.now(),
+}
+result = mongo.db.orders.insert_one(order)
+
+# 4. Find Orders by Customer Information (Index Use)
+query = {
+    'firstName': firstName,
+    'lastName': lastName,
+    'homeAddress': homeAddress
+}
+orders = list(mongo.db.orders.find(query).sort('created_at', -1))  # Use index on customer fields
