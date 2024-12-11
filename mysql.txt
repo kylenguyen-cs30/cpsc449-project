@@ -59,6 +59,26 @@ docker compose down --volumes
 ===
 /mycrumbls/1 -> delete
 
+Mongodb postman 
+
+{
+    "firstName": data["firstName"],
+    "lastName": data["lastName"],
+    "homeAddress": data["homeAddress"],
+    "items": data["items"],
+    "total": total,
+    "status": "pending",
+    "created_at": datetime.now(),
+    "updated_at": datetime.now(),
+}
+
+
+
+
+
+
+
+
 use crumbl_db;
 show tables;
 select * from user;
