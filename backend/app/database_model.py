@@ -12,6 +12,15 @@ class User(db.Model):
     firstName = db.Column(db.String(101), nullable=False)
     lastName = db.Column(db.String(101), nullable=False)
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "email": self.email,
+            "homeAddress": self.homeAddress,
+            "firstName": self.firstName,
+            "lastName": self.lastName,
+        }
+
     def __init__(self, email, firstName, lastName, password, homeAddress):
         self.email = email
         self.firstName = firstName
@@ -46,19 +55,19 @@ class PublicCrum(db.Model):
         self.description = description
         self.quantity = quantity
         self.price = price
-        
 
-    def serialize(self): 
-        return { 
-            "name": self.name,  
-            "description": self.description,  
-            "quantity": self.quantity,  
+    def serialize(self):
+        return {
+            "name": self.name,
+            "description": self.description,
+            "quantity": self.quantity,
             "price": self.price,
-            "id":self.id
+            "id": self.id,
         }
 
     def __repr__(self):
         return f"<Public Crum {self.name} - Qty: {self.quantity}>"
+
 
 # private crum
 class PrivateCrum(db.Model):
@@ -88,7 +97,7 @@ class PrivateCrum(db.Model):
             "description": self.description,
             "quantity": self.quantity,
             "price": float(self.price),
-            "user_id": self.user_id
+            "user_id": self.user_id,
         }
 
     def __repr__(self):

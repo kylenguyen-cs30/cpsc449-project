@@ -181,7 +181,8 @@ def register():
 
 @crumbl_blueprint.route("/users", methods=["GET"])
 def list_users():
-    return jsonify({"user": users}), 200
+    users = User.query.all()
+    return jsonify({"users": [user.to_dict() for user in users]}), 200
 
 
 @crumbl_blueprint.route("/logout", methods=["POST"])
@@ -351,24 +352,35 @@ def makeMyCrum():
 
     # Ensure all required fields are present and not empty
     required_fields = ["name", "description", "quantity", "price"]
+
     for field in required_fields:
         if field not in request.json or request.json[field] == "":
             return jsonify({"error": f"Missing or empty required field: {field}"}), 400
-
     # Validate quantity is an integer and non-negative
+
     if not isinstance(request.json["quantity"], int):
         return jsonify({"error": "Quantity must be an integer"}), 400
+
     if request.json["quantity"] < 0:
         return jsonify({"error": "Quantity must be non-negative"}), 400
-
     # Validate price is a number and non-negative
+
     if not isinstance(request.json["price"], (int, float)):
         return jsonify({"error": "Price must be a number"}), 400
-    if request.json["price"] < 0:
-        return jsonify({"error": "Price must be non-negative"}), 400
 
-    # Create a new private crumb object associated with the current user
-    new_crum = PrivateCrum()
+    if request.json["price"] < 0:
+        return (
+            jsonify({"error": "Price must be non-negative"}),
+            400,
+        )  # Create a new private crumb object associated with the current user
+
+    new_crum = PrivateCrum(
+        name=request.json["name"],
+        description=request.json["description"],
+        quantity=request.json["quantity"],
+        price=round(float(request.json["price"]), 2),
+        user_id=session["user_id"],
+    )
 
     try:
         db.session.add(new_crum)
