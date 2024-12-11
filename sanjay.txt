@@ -1,0 +1,25 @@
+db.orders.insertOne({
+    "firstName": "John",
+    "lastName": "Doe",
+    "homeAddress": "123 Main St",
+    "items": [
+        {"name": "Cookie", "price": 3.5, "quantity": 4}
+    ],
+    "total": 7.5,
+    "status": "pending",
+    "created_at": new Date(),
+    "updated_at": new Date()
+});
+
+db.orders.insertOne({
+    "firstName": "Shan",
+    "lastName": "Mit",
+    "homeAddress": "600 Main St",
+    "items": [
+        {"name": "Cookie", "price": 2.5, "quantity": 4}
+    ],
+    "total": 6.5,
+    "status": "pending",
+    "created_at": new Date(),
+    "updated_at": new Date()
+});
